@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import type { Player } from './Player';
+import type { PrimaryWeapon } from '../weapons/PrimaryWeapon';
 
 interface MovementKeys {
   readonly up: Phaser.Input.Keyboard.Key;
@@ -12,16 +13,18 @@ interface MovementKeys {
 export class PlayerController {
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
+  private readonly primaryWeapon: PrimaryWeapon;
   private readonly keys: MovementKeys;
   private readonly movement = new Phaser.Math.Vector2();
 
-  constructor(scene: Phaser.Scene, player: Player) {
+  constructor(scene: Phaser.Scene, player: Player, primaryWeapon: PrimaryWeapon) {
     if (!scene.input.keyboard) {
       throw new Error('Keyboard input is not available.');
     }
 
     this.scene = scene;
     this.player = player;
+    this.primaryWeapon = primaryWeapon;
     this.keys = {
       up: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
       left: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
@@ -40,6 +43,10 @@ export class PlayerController {
       this.scene.cameras.main,
     ) as Phaser.Math.Vector2;
     this.player.face(pointerPosition.x, pointerPosition.y);
+
+    if (this.scene.input.activePointer.leftButtonDown()) {
+      this.primaryWeapon.tryAttack(pointerPosition);
+    }
   }
 
   destroy(): void {

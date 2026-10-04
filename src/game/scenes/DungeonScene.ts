@@ -10,12 +10,17 @@ import {
   WORLD_WIDTH,
 } from '../constants/game';
 import { FixedDungeon } from '../dungeon/FixedDungeon';
+import { EnemyManager } from '../enemies/EnemyManager';
 import { Player } from '../player/Player';
 import { PlayerController } from '../player/PlayerController';
+import { ProjectileManager } from '../projectiles/ProjectileManager';
 import { getGameSession } from '../state/getGameSession';
+import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 
 export class DungeonScene extends Phaser.Scene {
   private playerController: PlayerController | null = null;
+  private projectileManager: ProjectileManager | null = null;
+  private enemyManager: EnemyManager | null = null;
 
   constructor() {
     super(SCENE_KEYS.DUNGEON);
@@ -43,12 +48,15 @@ export class DungeonScene extends Phaser.Scene {
     });
 
     this.physics.add.collider(player, dungeon.walls);
-    this.playerController = new PlayerController(this, player);
+    this.enemyManager = new EnemyManager(this, player, dungeon.walls);
+    this.projectileManager = new ProjectileManager(this, dungeon.walls);
+    const primaryWeapon = createPrimaryWeapon(this, player, this.projectileManager);
+    this.playerController = new PlayerController(this, player, primaryWeapon);
 
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     this.cameras.main.setDeadzone(GAME_WIDTH * 0.12, GAME_HEIGHT * 0.12);
 
-    this.createRunInfo(run.playerName, PLAYER_CLASSES[run.playerClass].label);
+    this.createRunInfo(player, PLAYER_CLASSES[run.playerClass].label);
     this.createDemoExit(() => {
       session.finishRun();
       this.scene.start(SCENE_KEYS.GAME_OVER);
@@ -56,17 +64,23 @@ export class DungeonScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.playerController?.destroy();
+      this.projectileManager?.destroy();
+      this.enemyManager?.destroy();
       this.playerController = null;
+      this.projectileManager = null;
+      this.enemyManager = null;
     });
   }
 
   update(): void {
     this.playerController?.update();
+    this.projectileManager?.update();
+    this.enemyManager?.update();
   }
 
-  private createRunInfo(playerName: string, className: string): void {
+  private createRunInfo(player: Player, className: string): void {
     this.add
-      .text(28, 24, `${playerName} · ${className}`, {
+      .text(28, 24, `${player.playerName} · ${className}`, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '20px',
         color: '#f4f5f7',
@@ -77,11 +91,26 @@ export class DungeonScene extends Phaser.Scene {
       .setDepth(100);
 
     this.add
-      .text(28, 78, 'WASD para mover · mire com o mouse', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '16px',
-        color: '#a9b4c1',
-      })
+      .text(
+        28,
+        78,
+        [
+          `HP ${player.stats.health}/${player.stats.maxHealth}`,
+          `Dano ${player.stats.damage} · Defesa ${player.stats.defense}`,
+          `Movimento ${player.stats.movementSpeed} · Ataques/s ${player.stats.attackSpeed}`,
+          `Alcance ${player.stats.attackRange}`,
+          '',
+          'WASD para mover · mouse para mirar',
+          'Clique esquerdo para atacar',
+          'Inimigos vermelhos estão em alcance de ataque',
+        ].join('\n'),
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '15px',
+          color: '#a9b4c1',
+          lineSpacing: 5,
+        },
+      )
       .setScrollFactor(0)
       .setDepth(100);
   }

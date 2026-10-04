@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 
 import { PLAYER_MOVEMENT } from '../config/playerMovement';
-import type { PlayerClass } from '../types/player';
+import type { PlayerClass, PlayerStats } from '../types/player';
+import { createPlayerStats } from './createPlayerStats';
 import { getPlayerTextureKey } from './playerTextures';
 
 export interface PlayerIdentity {
@@ -14,6 +15,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   readonly playerId: string;
   readonly playerName: string;
   readonly playerClass: PlayerClass;
+  readonly stats: PlayerStats;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,6 +28,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.playerId = identity.id;
     this.playerName = identity.name;
     this.playerClass = identity.playerClass;
+    this.stats = createPlayerStats(identity.playerClass);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -41,7 +44,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    direction.normalize().scale(PLAYER_MOVEMENT.speed);
+    direction.normalize().scale(this.stats.movementSpeed);
     this.setVelocity(direction.x, direction.y);
   }
 
