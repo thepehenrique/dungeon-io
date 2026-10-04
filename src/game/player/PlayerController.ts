@@ -34,6 +34,12 @@ export class PlayerController {
   }
 
   update(): void {
+    if (this.player.isDead) {
+      this.movement.set(0, 0);
+      this.player.move(this.movement);
+      return;
+    }
+
     const horizontal = Number(this.keys.right.isDown) - Number(this.keys.left.isDown);
     const vertical = Number(this.keys.down.isDown) - Number(this.keys.up.isDown);
     this.movement.set(horizontal, vertical);

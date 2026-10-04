@@ -205,6 +205,101 @@ legend {
   transform: translateY(-2px);
 }
 
+.level-up-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: auto;
+  background: rgba(3, 5, 8, 0.82);
+  backdrop-filter: blur(5px);
+}
+
+.level-up-panel {
+  width: min(940px, 100%);
+  padding: clamp(28px, 5vw, 52px);
+  border: 1px solid #806d3d;
+  background:
+    radial-gradient(circle at 50% 0, rgba(230, 200, 122, 0.13), transparent 42%),
+    #0c1118;
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.level-up-panel h2 {
+  margin: 6px 0 0;
+  color: #f0e7cd;
+  font-family: Georgia, serif;
+  font-size: clamp(30px, 5vw, 48px);
+  letter-spacing: 0.06em;
+}
+
+.level-up-intro {
+  margin: 12px 0 30px;
+  color: #9da8b5;
+}
+
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.upgrade-card {
+  display: flex;
+  min-height: 210px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #3c4858;
+  padding: 24px 18px;
+  color: #eef1f5;
+  background: #121a25;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.upgrade-card:hover:not(:disabled),
+.upgrade-card:focus-visible:not(:disabled) {
+  border-color: #e6c87a;
+  outline: none;
+  background: #192433;
+  transform: translateY(-4px);
+}
+
+.upgrade-card:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.upgrade-card__symbol {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid #806d3d;
+  border-radius: 50%;
+  color: #e6c87a;
+  background: rgba(230, 200, 122, 0.08);
+  font-size: 30px;
+}
+
+.upgrade-card strong {
+  color: #f3d98f;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.upgrade-card small {
+  color: #aab4c0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 @media (max-width: 680px), (max-height: 720px) {
   .menu-screen {
     overflow-y: auto;
@@ -225,5 +320,22 @@ legend {
 
   .class-card__content {
     min-height: 72px;
+  }
+
+  .level-up-screen {
+    overflow-y: auto;
+    place-items: start center;
+  }
+
+  .level-up-panel {
+    padding: 24px;
+  }
+
+  .upgrade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upgrade-card {
+    min-height: 120px;
   }
 }

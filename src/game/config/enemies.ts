@@ -14,7 +14,9 @@ export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
     baseStats: {
       maxHealth: 45,
       damage: 10,
+      defense: 2,
       movementSpeed: 175,
+      attackSpeed: 1.2,
       detectionRange: 480,
       attackRange: 50,
       experienceReward: 10,
@@ -29,7 +31,9 @@ export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
     baseStats: {
       maxHealth: 80,
       damage: 12,
+      defense: 5,
       movementSpeed: 125,
+      attackSpeed: 0.85,
       detectionRange: 450,
       attackRange: 54,
       experienceReward: 20,
@@ -44,7 +48,9 @@ export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
     baseStats: {
       maxHealth: 130,
       damage: 18,
+      defense: 8,
       movementSpeed: 75,
+      attackSpeed: 0.55,
       detectionRange: 420,
       attackRange: 60,
       experienceReward: 25,

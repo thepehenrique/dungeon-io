@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { PLAYER_MOVEMENT } from '../config/playerMovement';
+import type { CombatStats } from '../types/combat';
 import type { PlayerClass, PlayerStats } from '../types/player';
 import { createPlayerStats } from './createPlayerStats';
 import { getPlayerTextureKey } from './playerTextures';
@@ -16,6 +17,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   readonly playerName: string;
   readonly playerClass: PlayerClass;
   readonly stats: PlayerStats;
+
+  private dead = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -39,6 +42,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   move(direction: Phaser.Math.Vector2): void {
+    if (this.dead) {
+      this.setVelocity(0, 0);
+      return;
+    }
+
     if (direction.lengthSq() === 0) {
       this.setVelocity(0, 0);
       return;
@@ -50,5 +58,30 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   face(targetX: number, targetY: number): void {
     this.setRotation(Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY));
+  }
+
+  get combatId(): string {
+    return this.playerId;
+  }
+
+  get combatStats(): CombatStats {
+    return this.stats;
+  }
+
+  get isDead(): boolean {
+    return this.dead;
+  }
+
+  die(): void {
+    if (this.dead) {
+      return;
+    }
+
+    this.dead = true;
+    this.setVelocity(0, 0);
+    this.setTint(0x555555);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.enable = false;
   }
 }

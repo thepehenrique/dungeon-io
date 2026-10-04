@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import type { ProjectileDefinition } from '../types/combat';
+import type { AttackKind, ProjectileDefinition } from '../types/combat';
 
 export interface ProjectileLaunchData {
   readonly ownerId: string;
@@ -11,6 +11,7 @@ export interface ProjectileLaunchData {
 }
 
 export abstract class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
+  abstract readonly attackKind: AttackKind;
   readonly ownerId: string;
   readonly damage: number;
 

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { ENEMY_DEFINITIONS } from '../config/enemies';
 import type { Player } from '../player/Player';
+import type { CombatStats } from '../types/combat';
 import { EnemyState, type EnemyStats, type EnemyType } from '../types/enemy';
 import { createEnemyStats } from './createEnemyStats';
 
@@ -12,6 +13,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly stats: EnemyStats;
 
   private currentAiState = EnemyState.Idle;
+  private nextAttackAt = 0;
 
   protected constructor(
     scene: Phaser.Scene,
@@ -42,7 +44,19 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.currentAiState;
   }
 
-  updateAI(player: Player): void {
+  get combatId(): string {
+    return this.enemyId;
+  }
+
+  get combatStats(): CombatStats {
+    return this.stats;
+  }
+
+  get isDead(): boolean {
+    return this.currentAiState === EnemyState.Dead;
+  }
+
+  updateAI(player: Player, onAttack: (attacker: Enemy, target: Player) => void): void {
     if (this.currentAiState === EnemyState.Dead || !this.active) {
       return;
     }
@@ -63,6 +77,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.transitionTo(EnemyState.Attack);
       this.stopMovement();
       this.facePlayer(player);
+      this.tryAttack(player, onAttack);
       return;
     }
 
@@ -102,6 +117,18 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.setVelocity(direction.x, direction.y);
     this.facePlayer(player);
+  }
+
+  private tryAttack(
+    player: Player,
+    onAttack: (attacker: Enemy, target: Player) => void,
+  ): void {
+    if (player.isDead || this.scene.time.now < this.nextAttackAt) {
+      return;
+    }
+
+    this.nextAttackAt = this.scene.time.now + 1000 / this.stats.attackSpeed;
+    onAttack(this, player);
   }
 
   private facePlayer(player: Player): void {

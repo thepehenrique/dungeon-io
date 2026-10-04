@@ -14,7 +14,10 @@ export enum EnemyState {
 export interface EnemyBaseStats {
   readonly maxHealth: number;
   readonly damage: number;
+  readonly defense: number;
   readonly movementSpeed: number;
+  /** Number of attacks allowed per second. */
+  readonly attackSpeed: number;
   readonly detectionRange: number;
   readonly attackRange: number;
   readonly experienceReward: number;
@@ -24,7 +27,9 @@ export interface EnemyStats {
   health: number;
   maxHealth: number;
   damage: number;
+  defense: number;
   movementSpeed: number;
+  attackSpeed: number;
   detectionRange: number;
   attackRange: number;
   experienceReward: number;

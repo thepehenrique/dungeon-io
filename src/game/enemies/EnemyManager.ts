@@ -9,14 +9,17 @@ export class EnemyManager {
   readonly group: Phaser.Physics.Arcade.Group;
 
   private readonly player: Player;
+  private readonly onEnemyAttack: (attacker: Enemy, target: Player) => void;
   private readonly colliders: Phaser.Physics.Arcade.Collider[];
 
   constructor(
     scene: Phaser.Scene,
     player: Player,
     walls: Phaser.Physics.Arcade.StaticGroup,
+    onEnemyAttack: (attacker: Enemy, target: Player) => void,
   ) {
     this.player = player;
+    this.onEnemyAttack = onEnemyAttack;
     this.group = scene.physics.add.group({ allowGravity: false });
 
     for (const spawn of INITIAL_ENEMY_SPAWNS) {
@@ -33,9 +36,15 @@ export class EnemyManager {
   update(): void {
     for (const child of [...this.group.getChildren()]) {
       if (child instanceof Enemy && child.active) {
-        child.updateAI(this.player);
+        child.updateAI(this.player, this.onEnemyAttack);
       }
     }
+  }
+
+  getEnemies(): readonly Enemy[] {
+    return this.group
+      .getChildren()
+      .filter((child): child is Enemy => child instanceof Enemy);
   }
 
   destroy(): void {

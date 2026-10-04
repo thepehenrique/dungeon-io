@@ -40,6 +40,7 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - `src/game/weapons`: armas primárias e controle de cooldown.
 - `src/game/projectiles`: projéteis, alcance e gerenciamento de colisões.
 - `src/game/enemies`: inimigos, especializações e máquina de estados da IA.
+- `src/game/ui/hud`: HUD do Phaser e barras de status reutilizáveis.
 - `src/game/dungeon`: construção do mapa fixo e paredes.
 - `src/game/state`: estado centralizado da run.
 - `src/game/types`: contratos TypeScript do domínio.
@@ -60,8 +61,17 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Goblin, Skeleton Warrior e Zombie possuem atributos e velocidades diferentes.
 - Inimigos alternam entre `IDLE`, `CHASE`, `ATTACK` e `DEAD`.
 - Inimigos detectam e perseguem o jogador, respeitando paredes e colisões.
+- Ataques do jogador causam dano e podem derrotar inimigos.
+- Inimigos atacam com cooldown próprio e reduzem a vida do jogador.
+- Defesa mitiga dano, mortes são processadas e kills são contabilizadas.
+- Inimigos derrotados concedem XP de acordo com seu tipo.
+- XP excedente é preservado ao subir de nível.
+- A quantidade necessária cresce conforme o nível da run.
+- Ao subir de nível, a ação pausa e três upgrades únicos são sorteados.
+- Somente uma melhoria pode ser escolhida antes de continuar.
+- O HUD exibe nome, classe, nível, vida, XP e inimigos derrotados.
 - A câmera segue o jogador dentro de um mundo maior que a viewport.
 - Paredes externas e internas possuem colisão física.
 - É possível reiniciar a run ou voltar ao menu.
 
-Ataques de inimigos ainda não reduzem vida, e os ataques do jogador ainda não causam dano. Essas integrações pertencem à próxima etapa.
+O fluxo jogável básico até progressão e upgrades está funcional.
