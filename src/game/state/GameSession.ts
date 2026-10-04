@@ -1,5 +1,5 @@
 import type { PlayerClass } from '../types/player';
-import type { RunState } from '../types/run';
+import { RunEndReason, type RunState } from '../types/run';
 
 export class GameSession {
   private currentRun: RunState | null = null;
@@ -11,6 +11,8 @@ export class GameSession {
       playerName: playerName.trim(),
       playerClass,
       startedAt: Date.now(),
+      endedAt: null,
+      endReason: null,
       level: 1,
       experience: 0,
       kills: 0,
@@ -21,10 +23,13 @@ export class GameSession {
     return this.currentRun;
   }
 
-  finishRun(): RunState | null {
-    if (this.currentRun) {
+  finishRun(reason: RunEndReason): RunState | null {
+    if (this.currentRun && this.currentRun.endedAt === null) {
+      const endedAt = Date.now();
+      this.currentRun.endedAt = endedAt;
+      this.currentRun.endReason = reason;
       this.currentRun.elapsedSeconds = Math.floor(
-        (Date.now() - this.currentRun.startedAt) / 1000,
+        (endedAt - this.currentRun.startedAt) / 1000,
       );
     }
 

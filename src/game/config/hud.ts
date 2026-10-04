@@ -2,7 +2,7 @@ export const HUD_LAYOUT = {
   x: 24,
   y: 24,
   width: 370,
-  height: 210,
+  height: 238,
   padding: 18,
   barWidth: 334,
   barHeight: 14,

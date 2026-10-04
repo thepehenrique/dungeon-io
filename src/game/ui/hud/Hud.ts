@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
 import { GAME_HEIGHT } from '../../constants/game';
 import type { Player } from '../../player/Player';
+import type { EquipmentSystem } from '../../systems/EquipmentSystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
 import type { PlayerClassDefinition } from '../../types/player';
 import type { RunState } from '../../types/run';
@@ -12,8 +13,10 @@ export class Hud {
   private readonly container: Phaser.GameObjects.Container;
   private readonly player: Player;
   private readonly run: RunState;
+  private readonly equipmentSystem: EquipmentSystem;
   private readonly levelText: Phaser.GameObjects.Text;
   private readonly killsText: Phaser.GameObjects.Text;
+  private readonly equipmentText: Phaser.GameObjects.Text;
   private readonly healthBar: HudBar;
   private readonly experienceBar: HudBar;
 
@@ -22,15 +25,19 @@ export class Hud {
   private lastExperience = Number.NaN;
   private lastLevel = Number.NaN;
   private lastKills = Number.NaN;
+  private lastGold = Number.NaN;
+  private lastEquipmentSignature = '';
 
   constructor(
     scene: Phaser.Scene,
     player: Player,
     run: RunState,
     playerClass: PlayerClassDefinition,
+    equipmentSystem: EquipmentSystem,
   ) {
     this.player = player;
     this.run = run;
+    this.equipmentSystem = equipmentSystem;
     this.container = scene.add
       .container(HUD_LAYOUT.x, HUD_LAYOUT.y)
       .setScrollFactor(0)
@@ -68,6 +75,11 @@ export class Hud {
       fontSize: '14px',
       color: HUD_COLORS.secondaryText,
     });
+    this.equipmentText = scene.add.text(HUD_LAYOUT.padding, 207, '', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12px',
+      color: HUD_COLORS.mutedText,
+    });
 
     this.container.add([panel, accent, nameText, classText, this.levelText]);
     this.healthBar = new HudBar(scene, this.container, 70, 'VIDA', HUD_COLORS.health);
@@ -78,7 +90,7 @@ export class Hud {
       'EXPERIÊNCIA',
       HUD_COLORS.experience,
     );
-    this.container.add(this.killsText);
+    this.container.add([this.killsText, this.equipmentText]);
 
     const controlsText = scene.add
       .text(
@@ -102,12 +114,17 @@ export class Hud {
   }
 
   update(): void {
+    const equippedItems = this.equipmentSystem.getEquippedItems();
+    const equipmentSignature = equippedItems.map((item) => item.id).join('|');
+
     if (
       this.player.stats.health === this.lastHealth &&
       this.player.stats.maxHealth === this.lastMaxHealth &&
       this.run.experience === this.lastExperience &&
       this.run.level === this.lastLevel &&
-      this.run.kills === this.lastKills
+      this.run.kills === this.lastKills &&
+      this.run.gold === this.lastGold &&
+      equipmentSignature === this.lastEquipmentSignature
     ) {
       return;
     }
@@ -117,9 +134,18 @@ export class Hud {
     this.lastExperience = this.run.experience;
     this.lastLevel = this.run.level;
     this.lastKills = this.run.kills;
+    this.lastGold = this.run.gold;
+    this.lastEquipmentSignature = equipmentSignature;
 
     this.levelText.setText(`LV ${this.run.level}`);
-    this.killsText.setText(`Inimigos derrotados: ${this.run.kills}`);
+    this.killsText.setText(
+      `Inimigos derrotados: ${this.run.kills}  ·  Ouro: ${this.run.gold}`,
+    );
+    this.equipmentText.setText(
+      equippedItems.length > 0
+        ? `Equipado: ${equippedItems.map((item) => item.label).join(' · ')}`
+        : 'Equipado: nenhum',
+    );
     this.healthBar.update(this.player.stats.health, this.player.stats.maxHealth);
     this.experienceBar.update(
       this.run.experience,

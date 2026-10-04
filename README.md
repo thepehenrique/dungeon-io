@@ -40,6 +40,7 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - `src/game/weapons`: armas primárias e controle de cooldown.
 - `src/game/projectiles`: projéteis, alcance e gerenciamento de colisões.
 - `src/game/enemies`: inimigos, especializações e máquina de estados da IA.
+- `src/game/items`: baús e objetos coletáveis da dungeon.
 - `src/game/ui/hud`: HUD do Phaser e barras de status reutilizáveis.
 - `src/game/dungeon`: construção do mapa fixo e paredes.
 - `src/game/state`: estado centralizado da run.
@@ -70,8 +71,18 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Ao subir de nível, a ação pausa e três upgrades únicos são sorteados.
 - Somente uma melhoria pode ser escolhida antes de continuar.
 - O HUD exibe nome, classe, nível, vida, XP e inimigos derrotados.
+- A morte encerra formalmente a run e exibe nível, kills e tempo sobrevivido.
+- Jogar novamente cria uma run limpa, com novos identificadores e progresso zerado.
+- Um baú comum pode ser encontrado e aberto automaticamente ao contato.
+- O loot básico concede ouro ou uma cura imediata, com feedback visual.
+- Baús também podem conceder equipamentos compatíveis com a classe atual.
+- Equipamentos aplicam modificadores e substituem corretamente itens do mesmo slot.
 - A câmera segue o jogador dentro de um mundo maior que a viewport.
 - Paredes externas e internas possuem colisão física.
+- A dungeon fixa possui seis salas visualmente distintas, conectadas por corredores.
+- Tochas animadas, áreas escuras, teias, ossos, caixas e barris ambientam o mapa.
+- Caixas e barris funcionam como obstáculos físicos para jogador, inimigos e projéteis.
 - É possível reiniciar a run ou voltar ao menu.
 
-O fluxo jogável básico até progressão e upgrades está funcional.
+O fluxo jogável básico do menu ao Game Over está funcional. A geração procedural de
+dungeons ainda não faz parte desta etapa.

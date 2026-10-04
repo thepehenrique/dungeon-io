@@ -12,6 +12,7 @@ export interface PlayerBaseStats {
   /** Number of attacks allowed per second. */
   readonly attackSpeed: number;
   readonly attackRange: number;
+  readonly criticalChance: number;
 }
 
 export interface PlayerStats {
@@ -22,6 +23,7 @@ export interface PlayerStats {
   movementSpeed: number;
   attackSpeed: number;
   attackRange: number;
+  criticalChance: number;
 }
 
 export interface PlayerClassDefinition {

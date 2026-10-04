@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-import { COMBAT_BALANCE } from '../config/combat';
-import { DUNGEON_SPAWN } from '../config/dungeon';
+import { DUNGEON_SPAWN, DUNGEON_STYLE } from '../config/dungeon';
+import { LOOT_PRESENTATION } from '../config/loot';
 import { PLAYER_CLASSES } from '../config/playerClasses';
 import { PROGRESSION_CONFIG } from '../config/progression';
 import {
@@ -14,15 +14,20 @@ import {
 import { FixedDungeon } from '../dungeon/FixedDungeon';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
+import { ChestManager } from '../items/chests/ChestManager';
 import { Player } from '../player/Player';
 import { PlayerController } from '../player/PlayerController';
 import { ProjectileManager } from '../projectiles/ProjectileManager';
 import { getGameSession } from '../state/getGameSession';
 import { CombatSystem } from '../systems/CombatSystem';
+import { EquipmentSystem } from '../systems/EquipmentSystem';
+import { LootSystem } from '../systems/LootSystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { AttackKind } from '../types/combat';
+import type { CollectedLoot } from '../types/loot';
 import type { UpgradeDefinition } from '../types/upgrade';
+import { RunEndReason } from '../types/run';
 import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 import { LevelUpView } from '../../ui/level-up/LevelUpView';
@@ -35,15 +40,18 @@ export class DungeonScene extends Phaser.Scene {
   private hud: Hud | null = null;
   private progressionSystem: ProgressionSystem | null = null;
   private readonly upgradeSystem = new UpgradeSystem();
+  private readonly lootSystem = new LootSystem();
   private levelUpView: LevelUpView | null = null;
   private readonly pendingUpgradeLevels: number[] = [];
   private isChoosingUpgrade = false;
+  private gameOverPending = false;
 
   constructor() {
     super(SCENE_KEYS.DUNGEON);
   }
 
   create(): void {
+    this.gameOverPending = false;
     const session = getGameSession(this);
     const run = session.getRun();
 
@@ -78,14 +86,26 @@ export class DungeonScene extends Phaser.Scene {
       }
 
       if (target instanceof Player) {
-        session.finishRun();
-        this.time.delayedCall(COMBAT_BALANCE.playerDeathDelayMs, () => {
-          this.scene.start(SCENE_KEYS.GAME_OVER);
-        });
+        if (this.gameOverPending) {
+          return;
+        }
+
+        session.finishRun(RunEndReason.Defeated);
+        this.gameOverPending = true;
       }
     });
 
     this.physics.add.collider(player, dungeon.walls);
+    const equipmentSystem = new EquipmentSystem(player);
+    new ChestManager(this, player, (chest) => {
+      const collectedLoot = this.lootSystem.collectChestLoot(chest.rarity, {
+        playerStats: player.stats,
+        playerClass: player.playerClass,
+        run,
+        equipEquipment: (equipment) => equipmentSystem.equip(equipment),
+      });
+      this.showCollectedLoot(chest.x, chest.y, collectedLoot);
+    });
     this.enemyManager = new EnemyManager(
       this,
       player,
@@ -121,20 +141,17 @@ export class DungeonScene extends Phaser.Scene {
 
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     this.cameras.main.setDeadzone(GAME_WIDTH * 0.12, GAME_HEIGHT * 0.12);
+    this.cameras.main.fadeIn(DUNGEON_STYLE.cameraFadeDurationMs, 4, 5, 8);
 
-    this.hud = new Hud(this, player, run, PLAYER_CLASSES[run.playerClass]);
-    this.createDemoExit(() => {
-      session.finishRun();
-      this.scene.start(SCENE_KEYS.GAME_OVER);
-    });
-
+    this.hud = new Hud(
+      this,
+      player,
+      run,
+      PLAYER_CLASSES[run.playerClass],
+      equipmentSystem,
+    );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.playerController?.destroy();
-      this.projectileManager?.destroy();
-      this.enemyManager?.destroy();
       this.levelUpView?.destroy();
-      this.hud?.destroy();
-      this.resumeAction();
       this.playerController = null;
       this.projectileManager = null;
       this.enemyManager = null;
@@ -143,11 +160,18 @@ export class DungeonScene extends Phaser.Scene {
       this.progressionSystem = null;
       this.levelUpView = null;
       this.pendingUpgradeLevels.length = 0;
+      this.isChoosingUpgrade = false;
+      this.gameOverPending = false;
     });
   }
 
   update(): void {
     this.hud?.update();
+
+    if (this.gameOverPending) {
+      this.scene.start(SCENE_KEYS.GAME_OVER);
+      return;
+    }
 
     if (this.isChoosingUpgrade) {
       return;
@@ -156,6 +180,10 @@ export class DungeonScene extends Phaser.Scene {
     this.playerController?.update();
     this.projectileManager?.update();
     this.enemyManager?.update();
+
+    if (this.gameOverPending) {
+      this.scene.start(SCENE_KEYS.GAME_OVER);
+    }
   }
 
   private showExperienceGain(x: number, y: number, amount: number): void {
@@ -176,6 +204,29 @@ export class DungeonScene extends Phaser.Scene {
       y: text.y - 32,
       alpha: 0,
       duration: PROGRESSION_CONFIG.experienceTextDurationMs,
+      ease: 'Quad.Out',
+      onComplete: () => text.destroy(),
+    });
+  }
+
+  private showCollectedLoot(x: number, y: number, loot: CollectedLoot): void {
+    const text = this.add
+      .text(x, y - 42, loot.message, {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '17px',
+        fontStyle: 'bold',
+        color: loot.drop.definition.color,
+        stroke: '#080a0d',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(130);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - 34,
+      alpha: 0,
+      duration: LOOT_PRESENTATION.collectionTextDurationMs,
       ease: 'Quad.Out',
       onComplete: () => text.destroy(),
     });
@@ -243,19 +294,4 @@ export class DungeonScene extends Phaser.Scene {
     this.isChoosingUpgrade = false;
   }
 
-  private createDemoExit(onExit: () => void): void {
-    this.add
-      .text(GAME_WIDTH - 28, 24, 'FINALIZAR DEMONSTRAÇÃO', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '15px',
-        color: '#e6c87a',
-        backgroundColor: '#202b38',
-        padding: { x: 16, y: 11 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(100)
-      .setInteractive({ useHandCursor: true })
-      .on(Phaser.Input.Events.POINTER_DOWN, onExit);
-  }
 }

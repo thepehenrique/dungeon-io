@@ -14,6 +14,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       movementSpeed: 210,
       attackSpeed: 0.85,
       attackRange: 82,
+      criticalChance: 0.05,
     },
   },
   [PlayerClass.Archer]: {
@@ -29,6 +30,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       movementSpeed: 285,
       attackSpeed: 1.25,
       attackRange: 560,
+      criticalChance: 0.08,
     },
   },
   [PlayerClass.Mage]: {
@@ -44,6 +46,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       movementSpeed: 240,
       attackSpeed: 1,
       attackRange: 480,
+      criticalChance: 0.05,
     },
   },
 };
