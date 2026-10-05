@@ -8,6 +8,7 @@ interface MovementKeys {
   readonly left: Phaser.Input.Keyboard.Key;
   readonly down: Phaser.Input.Keyboard.Key;
   readonly right: Phaser.Input.Keyboard.Key;
+  readonly usePotion: Phaser.Input.Keyboard.Key;
 }
 
 export class PlayerController {
@@ -15,9 +16,15 @@ export class PlayerController {
   private readonly player: Player;
   private readonly primaryWeapon: PrimaryWeapon;
   private readonly keys: MovementKeys;
+  private readonly onUsePotion: () => void;
   private readonly movement = new Phaser.Math.Vector2();
 
-  constructor(scene: Phaser.Scene, player: Player, primaryWeapon: PrimaryWeapon) {
+  constructor(
+    scene: Phaser.Scene,
+    player: Player,
+    primaryWeapon: PrimaryWeapon,
+    onUsePotion: () => void,
+  ) {
     if (!scene.input.keyboard) {
       throw new Error('Keyboard input is not available.');
     }
@@ -25,11 +32,13 @@ export class PlayerController {
     this.scene = scene;
     this.player = player;
     this.primaryWeapon = primaryWeapon;
+    this.onUsePotion = onUsePotion;
     this.keys = {
       up: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
       left: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
       down: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       right: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+      usePotion: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
     };
   }
 
@@ -52,6 +61,10 @@ export class PlayerController {
 
     if (this.scene.input.activePointer.leftButtonDown()) {
       this.primaryWeapon.tryAttack(pointerPosition);
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.keys.usePotion)) {
+      this.onUsePotion();
     }
   }
 

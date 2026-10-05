@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { DUNGEON_STYLE } from '../config/dungeon';
+import { CONSUMABLE_PRESENTATION } from '../config/consumables';
 import { LOOT_PRESENTATION } from '../config/loot';
 import { PLAYER_CLASSES } from '../config/playerClasses';
 import { PROGRESSION_CONFIG } from '../config/progression';
@@ -13,6 +14,8 @@ import { TilemapDungeon } from '../dungeon/TilemapDungeon';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { ChestManager } from '../items/chests/ChestManager';
+import { ConsumableManager } from '../items/consumables/ConsumableManager';
+import { PotionSlot } from '../items/consumables/PotionSlot';
 import { Player } from '../player/Player';
 import { PlayerController } from '../player/PlayerController';
 import { ProjectileManager } from '../projectiles/ProjectileManager';
@@ -23,7 +26,7 @@ import { LootSystem } from '../systems/LootSystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { AttackKind } from '../types/combat';
-import type { CollectedLoot } from '../types/loot';
+import { LootDelivery } from '../types/loot';
 import type { UpgradeDefinition } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
 import { Hud } from '../ui/hud/Hud';
@@ -33,6 +36,7 @@ import { LevelUpView } from '../../ui/level-up/LevelUpView';
 export class DungeonScene extends Phaser.Scene {
   private playerController: PlayerController | null = null;
   private projectileManager: ProjectileManager | null = null;
+  private consumableManager: ConsumableManager | null = null;
   private enemyManager: EnemyManager | null = null;
   private player: Player | null = null;
   private hud: Hud | null = null;
@@ -97,17 +101,44 @@ export class DungeonScene extends Phaser.Scene {
 
     this.physics.add.collider(player, dungeon.walls);
     const equipmentSystem = new EquipmentSystem(player);
+    const potionSlot = new PotionSlot(run.potionSlot);
+    this.consumableManager = new ConsumableManager(
+      this,
+      player,
+      potionSlot,
+      ({ x, y, color, message, slotChanged }) => {
+        if (slotChanged) {
+          this.hud?.update();
+        }
+
+        this.showLootFeedback(x, y, message, color);
+      },
+    );
     new ChestManager(
       this,
       player,
       (chest) => {
-        const collectedLoot = this.lootSystem.collectChestLoot(chest.rarity, {
-          playerStats: player.stats,
+        const lootResult = this.lootSystem.collectChestLoot(chest.rarity, {
           playerClass: player.playerClass,
           run,
           equipEquipment: (equipment) => equipmentSystem.equip(equipment),
         });
-        this.showCollectedLoot(chest.x, chest.y, collectedLoot);
+
+        if (lootResult.delivery === LootDelivery.Pickup) {
+          this.consumableManager?.spawn(
+            lootResult.consumableType,
+            chest.x + CONSUMABLE_PRESENTATION.chestDropOffsetX,
+            chest.y + CONSUMABLE_PRESENTATION.chestDropOffsetY,
+          );
+          return;
+        }
+
+        this.showLootFeedback(
+          chest.x,
+          chest.y,
+          lootResult.message,
+          lootResult.drop.definition.color,
+        );
       },
       dungeon.getChestSpawns(),
     );
@@ -158,7 +189,28 @@ export class DungeonScene extends Phaser.Scene {
         combatSystem.applyMeleeAttack(this.enemyManager?.getEnemies() ?? [], attack);
       },
     );
-    this.playerController = new PlayerController(this, player, primaryWeapon);
+    this.playerController = new PlayerController(
+      this,
+      player,
+      primaryWeapon,
+      () => {
+        const result = potionSlot.use(player);
+
+        if (!result) {
+          return;
+        }
+
+        this.hud?.update();
+        this.showLootFeedback(
+          player.x,
+          player.y,
+          result.message,
+          result.consumed
+            ? result.definition.color
+            : CONSUMABLE_PRESENTATION.fullHealthColor,
+        );
+      },
+    );
 
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     this.cameras.main.setDeadzone(GAME_WIDTH * 0.12, GAME_HEIGHT * 0.12);
@@ -170,11 +222,15 @@ export class DungeonScene extends Phaser.Scene {
       run,
       PLAYER_CLASSES[run.playerClass],
       equipmentSystem,
+      potionSlot,
     );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.levelUpView?.destroy();
+      this.consumableManager?.destroy();
+      this.playerController?.destroy();
       this.playerController = null;
       this.projectileManager = null;
+      this.consumableManager = null;
       this.enemyManager = null;
       this.player = null;
       this.hud = null;
@@ -249,13 +305,18 @@ export class DungeonScene extends Phaser.Scene {
     });
   }
 
-  private showCollectedLoot(x: number, y: number, loot: CollectedLoot): void {
+  private showLootFeedback(
+    x: number,
+    y: number,
+    message: string,
+    color: string,
+  ): void {
     const text = this.add
-      .text(x, y - 42, loot.message, {
+      .text(x, y - 42, message, {
         fontFamily: 'Arial, sans-serif',
         fontSize: '17px',
         fontStyle: 'bold',
-        color: loot.drop.definition.color,
+        color,
         stroke: '#080a0d',
         strokeThickness: 5,
       })

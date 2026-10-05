@@ -17,6 +17,10 @@ export class GameSession {
       experience: 0,
       kills: 0,
       gold: 0,
+      potionSlot: {
+        type: null,
+        quantity: 0,
+      },
       elapsedSeconds: 0,
     };
 

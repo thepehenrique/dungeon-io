@@ -1,3 +1,4 @@
+import type { PotionSlotState } from './consumable';
 import type { PlayerClass } from './player';
 
 export enum RunEndReason {
@@ -16,5 +17,6 @@ export interface RunState {
   experience: number;
   kills: number;
   gold: number;
+  potionSlot: PotionSlotState;
   elapsedSeconds: number;
 }

@@ -1,7 +1,8 @@
 import { COMMON_CHEST_LOOT_TABLE } from '../config/loot';
 import {
+  LootDelivery,
   Rarity,
-  type CollectedLoot,
+  type ChestLootResult,
   type LootContext,
   type LootDrop,
   type LootTableEntry,
@@ -14,13 +15,22 @@ export class LootSystem {
     this.random = random;
   }
 
-  collectChestLoot(rarity: Rarity, context: LootContext): CollectedLoot {
+  collectChestLoot(rarity: Rarity, context: LootContext): ChestLootResult {
     const eligibleTable = this.getChestLootTable(rarity).filter(
       (entry) => !entry.loot.canDrop || entry.loot.canDrop(context),
     );
     const drop = this.roll(eligibleTable);
 
+    if (drop.definition.delivery === LootDelivery.Pickup) {
+      return {
+        delivery: LootDelivery.Pickup,
+        drop,
+        consumableType: drop.definition.consumableType,
+      };
+    }
+
     return {
+      delivery: LootDelivery.Immediate,
       drop,
       message: drop.definition.apply(context, drop.quantity),
     };

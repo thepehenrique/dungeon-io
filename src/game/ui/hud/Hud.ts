@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
+import { CONSUMABLE_DEFINITIONS } from '../../config/consumables';
 import { GAME_HEIGHT } from '../../constants/game';
+import type { PotionSlot } from '../../items/consumables/PotionSlot';
 import type { Player } from '../../player/Player';
 import type { EquipmentSystem } from '../../systems/EquipmentSystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
@@ -14,9 +16,11 @@ export class Hud {
   private readonly player: Player;
   private readonly run: RunState;
   private readonly equipmentSystem: EquipmentSystem;
+  private readonly potionSlot: PotionSlot;
   private readonly levelText: Phaser.GameObjects.Text;
   private readonly killsText: Phaser.GameObjects.Text;
   private readonly equipmentText: Phaser.GameObjects.Text;
+  private readonly potionSlotText: Phaser.GameObjects.Text;
   private readonly healthBar: HudBar;
   private readonly experienceBar: HudBar;
 
@@ -27,6 +31,7 @@ export class Hud {
   private lastKills = Number.NaN;
   private lastGold = Number.NaN;
   private lastEquipmentSignature = '';
+  private lastPotionSignature = '';
 
   constructor(
     scene: Phaser.Scene,
@@ -34,10 +39,12 @@ export class Hud {
     run: RunState,
     playerClass: PlayerClassDefinition,
     equipmentSystem: EquipmentSystem,
+    potionSlot: PotionSlot,
   ) {
     this.player = player;
     this.run = run;
     this.equipmentSystem = equipmentSystem;
+    this.potionSlot = potionSlot;
     this.container = scene.add
       .container(HUD_LAYOUT.x, HUD_LAYOUT.y)
       .setScrollFactor(0)
@@ -80,6 +87,20 @@ export class Hud {
       fontSize: '12px',
       color: HUD_COLORS.mutedText,
     });
+    this.potionSlotText = scene.add.text(
+      0,
+      HUD_LAYOUT.height + 10,
+      '',
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        color: HUD_COLORS.primaryText,
+        backgroundColor: '#080c12e8',
+        padding: { x: 14, y: 10 },
+        fixedWidth: HUD_LAYOUT.width,
+      },
+    );
 
     this.container.add([panel, accent, nameText, classText, this.levelText]);
     this.healthBar = new HudBar(scene, this.container, 70, 'VIDA', HUD_COLORS.health);
@@ -90,13 +111,17 @@ export class Hud {
       'EXPERIÊNCIA',
       HUD_COLORS.experience,
     );
-    this.container.add([this.killsText, this.equipmentText]);
+    this.container.add([
+      this.killsText,
+      this.equipmentText,
+      this.potionSlotText,
+    ]);
 
     const controlsText = scene.add
       .text(
         0,
         GAME_HEIGHT - HUD_LAYOUT.y - 24,
-        'WASD mover  ·  Mouse mirar  ·  Clique esquerdo atacar',
+        'WASD mover  ·  Mouse mirar  ·  Clique esquerdo atacar  ·  [1] usar poção',
         {
           fontFamily: 'Arial, sans-serif',
           fontSize: '13px',
@@ -116,6 +141,7 @@ export class Hud {
   update(): void {
     const equippedItems = this.equipmentSystem.getEquippedItems();
     const equipmentSignature = equippedItems.map((item) => item.id).join('|');
+    const potionSignature = `${this.potionSlot.type ?? 'EMPTY'}:${this.potionSlot.quantity}`;
 
     if (
       this.player.stats.health === this.lastHealth &&
@@ -124,7 +150,8 @@ export class Hud {
       this.run.level === this.lastLevel &&
       this.run.kills === this.lastKills &&
       this.run.gold === this.lastGold &&
-      equipmentSignature === this.lastEquipmentSignature
+      equipmentSignature === this.lastEquipmentSignature &&
+      potionSignature === this.lastPotionSignature
     ) {
       return;
     }
@@ -136,6 +163,7 @@ export class Hud {
     this.lastKills = this.run.kills;
     this.lastGold = this.run.gold;
     this.lastEquipmentSignature = equipmentSignature;
+    this.lastPotionSignature = potionSignature;
 
     this.levelText.setText(`LV ${this.run.level}`);
     this.killsText.setText(
@@ -145,6 +173,12 @@ export class Hud {
       equippedItems.length > 0
         ? `Equipado: ${equippedItems.map((item) => item.label).join(' · ')}`
         : 'Equipado: nenhum',
+    );
+    const potionType = this.potionSlot.type;
+    this.potionSlotText.setText(
+      potionType === null
+        ? '[1] Vazio'
+        : `[1] ${CONSUMABLE_DEFINITIONS[potionType].label} x${this.potionSlot.quantity}`,
     );
     this.healthBar.update(this.player.stats.health, this.player.stats.maxHealth);
     this.experienceBar.update(

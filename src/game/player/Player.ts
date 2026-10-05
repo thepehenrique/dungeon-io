@@ -4,6 +4,7 @@ import { PLAYER_MOVEMENT } from '../config/playerMovement';
 import type { CombatStats } from '../types/combat';
 import { PlayerClass, type PlayerStats } from '../types/player';
 import { createPlayerStats } from './createPlayerStats';
+import { restoreHealth } from './health';
 import { getPlayerTextureKey } from './playerTextures';
 import {
   ARCHER_SPRITE,
@@ -189,6 +190,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   get isDead(): boolean {
     return this.dead;
+  }
+
+  heal(amount: number): number {
+    if (this.dead) {
+      return 0;
+    }
+
+    return restoreHealth(this.stats, amount);
   }
 
   die(): void {

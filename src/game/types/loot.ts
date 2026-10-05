@@ -1,5 +1,5 @@
 import type { EquipmentDefinition, EquipmentResult } from './equipment';
-import type { PlayerStats } from './player';
+import type { ConsumableType } from './consumable';
 import type { PlayerClass } from './player';
 import type { RunState } from './run';
 
@@ -12,27 +12,43 @@ export enum Rarity {
 
 export enum LootType {
   Gold = 'GOLD',
-  Potion = 'POTION',
+  Consumable = 'CONSUMABLE',
   Equipment = 'EQUIPMENT',
   TemporaryUpgrade = 'TEMPORARY_UPGRADE',
 }
 
+export enum LootDelivery {
+  Immediate = 'IMMEDIATE',
+  Pickup = 'PICKUP',
+}
+
 export interface LootContext {
-  readonly playerStats: PlayerStats;
   readonly playerClass: PlayerClass;
   readonly run: RunState;
   readonly equipEquipment: (equipment: EquipmentDefinition) => EquipmentResult;
 }
 
-export interface LootDefinition {
+interface BaseLootDefinition {
   readonly id: string;
   readonly type: LootType;
   readonly rarity: Rarity;
   readonly label: string;
   readonly color: string;
   readonly canDrop?: (context: LootContext) => boolean;
+}
+
+export interface ImmediateLootDefinition extends BaseLootDefinition {
+  readonly delivery: LootDelivery.Immediate;
   readonly apply: (context: LootContext, quantity: number) => string;
 }
+
+export interface ConsumableLootDefinition extends BaseLootDefinition {
+  readonly type: LootType.Consumable;
+  readonly delivery: LootDelivery.Pickup;
+  readonly consumableType: ConsumableType;
+}
+
+export type LootDefinition = ImmediateLootDefinition | ConsumableLootDefinition;
 
 export interface LootTableEntry {
   readonly loot: LootDefinition;
@@ -46,7 +62,14 @@ export interface LootDrop {
   readonly quantity: number;
 }
 
-export interface CollectedLoot {
-  readonly drop: LootDrop;
-  readonly message: string;
-}
+export type ChestLootResult =
+  | {
+      readonly delivery: LootDelivery.Immediate;
+      readonly drop: LootDrop;
+      readonly message: string;
+    }
+  | {
+      readonly delivery: LootDelivery.Pickup;
+      readonly drop: LootDrop;
+      readonly consumableType: ConsumableType;
+    };

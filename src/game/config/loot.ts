@@ -1,13 +1,17 @@
+import {
+  CONSUMABLE_DEFINITIONS,
+  CONSUMABLE_DROP_WEIGHTS,
+} from './consumables';
 import { EQUIPMENT_DEFINITIONS } from './equipment';
 import type { EquipmentDefinition } from '../types/equipment';
 import {
+  LootDelivery,
   LootType,
   Rarity,
   type LootDefinition,
   type LootTableEntry,
 } from '../types/loot';
-
-const MINOR_POTION_HEALING = 25;
+import { ConsumableType } from '../types/consumable';
 
 export const LOOT_PRESENTATION = {
   collectionTextDurationMs: 900,
@@ -16,6 +20,7 @@ export const LOOT_PRESENTATION = {
 export const GOLD_COINS: LootDefinition = {
   id: 'gold-coins',
   type: LootType.Gold,
+  delivery: LootDelivery.Immediate,
   rarity: Rarity.Common,
   label: 'Moedas antigas',
   color: '#f0cb6a',
@@ -25,23 +30,12 @@ export const GOLD_COINS: LootDefinition = {
   },
 };
 
-export const MINOR_HEALING_POTION: LootDefinition = {
-  id: 'minor-healing-potion',
-  type: LootType.Potion,
-  rarity: Rarity.Common,
-  label: 'Poção menor de cura',
-  color: '#7cdb8e',
-  apply: ({ playerStats }, quantity) => {
-    const previousHealth = playerStats.health;
-    playerStats.health = Math.min(
-      playerStats.maxHealth,
-      playerStats.health + MINOR_POTION_HEALING * quantity,
-    );
-    const restoredHealth = playerStats.health - previousHealth;
-
-    return `${MINOR_HEALING_POTION.label}: +${formatNumber(restoredHealth)} HP`;
-  },
-};
+export const MINOR_HEALTH_POTION_LOOT = createConsumableLoot(
+  ConsumableType.MinorHealthPotion,
+);
+export const MAJOR_HEALTH_POTION_LOOT = createConsumableLoot(
+  ConsumableType.MajorHealthPotion,
+);
 
 const LEATHER_ARMOR_LOOT = createEquipmentLoot(
   EQUIPMENT_DEFINITIONS.leatherArmor,
@@ -60,8 +54,14 @@ export const COMMON_CHEST_LOOT_TABLE: readonly LootTableEntry[] = [
     maximumQuantity: 30,
   },
   {
-    loot: MINOR_HEALING_POTION,
-    weight: 20,
+    loot: MINOR_HEALTH_POTION_LOOT,
+    weight: CONSUMABLE_DROP_WEIGHTS[ConsumableType.MinorHealthPotion],
+    minimumQuantity: 1,
+    maximumQuantity: 1,
+  },
+  {
+    loot: MAJOR_HEALTH_POTION_LOOT,
+    weight: CONSUMABLE_DROP_WEIGHTS[ConsumableType.MajorHealthPotion],
     minimumQuantity: 1,
     maximumQuantity: 1,
   },
@@ -95,6 +95,7 @@ function createEquipmentLoot(equipment: EquipmentDefinition): LootDefinition {
   return {
     id: `equipment-${equipment.id}`,
     type: LootType.Equipment,
+    delivery: LootDelivery.Immediate,
     rarity: equipment.rarity,
     label: equipment.label,
     color: '#79b8ed',
@@ -110,6 +111,16 @@ function createEquipmentLoot(equipment: EquipmentDefinition): LootDefinition {
   };
 }
 
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+function createConsumableLoot(type: ConsumableType): LootDefinition {
+  const consumable = CONSUMABLE_DEFINITIONS[type];
+
+  return {
+    id: `consumable-${consumable.id}`,
+    type: LootType.Consumable,
+    delivery: LootDelivery.Pickup,
+    rarity: Rarity.Common,
+    label: consumable.label,
+    color: consumable.color,
+    consumableType: type,
+  };
 }
