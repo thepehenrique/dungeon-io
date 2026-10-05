@@ -1,4 +1,4 @@
-import type { PotionSlotState } from './consumable';
+import type { InventoryState } from './inventory';
 import type { PlayerClass } from './player';
 
 export enum RunEndReason {
@@ -17,6 +17,6 @@ export interface RunState {
   experience: number;
   kills: number;
   gold: number;
-  potionSlot: PotionSlotState;
+  inventory: InventoryState;
   elapsedSeconds: number;
 }

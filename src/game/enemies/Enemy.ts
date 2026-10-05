@@ -4,12 +4,14 @@ import { COMBAT_BALANCE } from '../config/combat';
 import { ENEMY_DEFINITIONS } from '../config/enemies';
 import type { Player } from '../player/Player';
 import type { CombatStats, DamageRequest } from '../types/combat';
+import type { DropTableId } from '../types/drop';
 import { EnemyState, type EnemyStats, type EnemyType } from '../types/enemy';
 import { createEnemyStats } from './createEnemyStats';
 
 export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly enemyId: string;
   readonly enemyType: EnemyType;
+  readonly dropTableId: DropTableId;
   readonly level: number;
   readonly stats: EnemyStats;
 
@@ -28,6 +30,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.enemyId = crypto.randomUUID();
     this.enemyType = type;
+    this.dropTableId = definition.dropTableId;
     this.level = level;
     this.stats = createEnemyStats(type);
 

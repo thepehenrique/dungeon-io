@@ -3,10 +3,12 @@ import {
   type EnemyDefinition,
   type EnemySpawnDefinition,
 } from '../types/enemy';
+import { DropTableId } from '../types/drop';
 
 export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
   [EnemyType.Goblin]: {
     type: EnemyType.Goblin,
+    dropTableId: DropTableId.Goblin,
     label: 'Goblin',
     color: 0x72bd4b,
     textureKey: 'enemy-goblin',
@@ -24,6 +26,7 @@ export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
   },
   [EnemyType.SkeletonWarrior]: {
     type: EnemyType.SkeletonWarrior,
+    dropTableId: DropTableId.SkeletonWarrior,
     label: 'Skeleton Warrior',
     color: 0xd8d2bb,
     textureKey: 'enemy-skeleton-warrior',
@@ -41,6 +44,7 @@ export const ENEMY_DEFINITIONS: Readonly<Record<EnemyType, EnemyDefinition>> = {
   },
   [EnemyType.Zombie]: {
     type: EnemyType.Zombie,
+    dropTableId: DropTableId.Zombie,
     label: 'Zombie',
     color: 0x78916c,
     textureKey: 'enemy-zombie',

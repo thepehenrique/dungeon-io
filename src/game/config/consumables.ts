@@ -41,19 +41,7 @@ export const CONSUMABLE_DEFINITIONS: Readonly<
   },
 };
 
-export const CONSUMABLE_DROP_WEIGHTS: Readonly<Record<ConsumableType, number>> = {
-  [ConsumableType.MinorHealthPotion]: 20,
-  [ConsumableType.MajorHealthPotion]: 8,
-};
-
 export const CONSUMABLE_PRESENTATION = {
-  chestDropOffsetX: 0,
-  chestDropOffsetY: 48,
   fullHealthMessage: 'Vida já está cheia',
   fullHealthColor: '#c7d0db',
-  slotOccupiedMessage: 'Slot de poção ocupado',
-} as const;
-
-export const POTION_SLOT_CONFIG = {
-  maxQuantity: null as number | null,
 } as const;

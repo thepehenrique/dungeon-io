@@ -9,7 +9,10 @@ interface InputKeys {
   readonly left: Phaser.Input.Keyboard.Key;
   readonly down: Phaser.Input.Keyboard.Key;
   readonly right: Phaser.Input.Keyboard.Key;
-  readonly usePotion: Phaser.Input.Keyboard.Key;
+  readonly interact: Phaser.Input.Keyboard.Key;
+  readonly quickSlot1: Phaser.Input.Keyboard.Key;
+  readonly quickSlot2: Phaser.Input.Keyboard.Key;
+  readonly quickSlot3: Phaser.Input.Keyboard.Key;
   readonly classAbility: Phaser.Input.Keyboard.Key;
 }
 
@@ -20,14 +23,16 @@ export class PlayerController {
   readonly classAbility: ClassAbilityController;
 
   private readonly keys: InputKeys;
-  private readonly onUsePotion: () => void;
+  private readonly onInteract: () => void;
+  private readonly onUseQuickSlot: (index: number) => void;
   private readonly movement = new Phaser.Math.Vector2();
 
   constructor(
     scene: Phaser.Scene,
     player: Player,
     primaryWeapon: PrimaryWeapon,
-    onUsePotion: () => void,
+    onInteract: () => void,
+    onUseQuickSlot: (index: number) => void,
   ) {
     if (!scene.input.keyboard) {
       throw new Error('Keyboard input is not available.');
@@ -36,14 +41,18 @@ export class PlayerController {
     this.scene = scene;
     this.player = player;
     this.primaryWeapon = primaryWeapon;
-    this.onUsePotion = onUsePotion;
+    this.onInteract = onInteract;
+    this.onUseQuickSlot = onUseQuickSlot;
     this.classAbility = new ClassAbilityController(player);
     this.keys = {
       up: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
       left: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
       down: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       right: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-      usePotion: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
+      interact: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      quickSlot1: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
+      quickSlot2: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
+      quickSlot3: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
       classAbility: scene.input.keyboard.addKey(
         Phaser.Input.Keyboard.KeyCodes.SPACE,
       ),
@@ -89,9 +98,29 @@ export class PlayerController {
       this.primaryWeapon.tryAttack(pointerPosition);
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.keys.usePotion)) {
-      this.onUsePotion();
+    if (Phaser.Input.Keyboard.JustDown(this.keys.interact)) {
+      this.onInteract();
     }
+
+    const quickSlotKeys = [
+      this.keys.quickSlot1,
+      this.keys.quickSlot2,
+      this.keys.quickSlot3,
+    ];
+
+    for (let index = 0; index < quickSlotKeys.length; index += 1) {
+      if (Phaser.Input.Keyboard.JustDown(quickSlotKeys[index])) {
+        this.onUseQuickSlot(index);
+      }
+    }
+  }
+
+  discardActionPresses(): void {
+    Phaser.Input.Keyboard.JustDown(this.keys.interact);
+    Phaser.Input.Keyboard.JustDown(this.keys.quickSlot1);
+    Phaser.Input.Keyboard.JustDown(this.keys.quickSlot2);
+    Phaser.Input.Keyboard.JustDown(this.keys.quickSlot3);
+    Phaser.Input.Keyboard.JustDown(this.keys.classAbility);
   }
 
   destroy(): void {

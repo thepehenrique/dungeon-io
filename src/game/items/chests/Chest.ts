@@ -6,6 +6,7 @@ import type { ItemRarity } from '../../types/item';
 
 export class Chest extends Phaser.Physics.Arcade.Sprite {
   readonly rarity: ItemRarity;
+  readonly label: string;
 
   private chestState = ChestState.Closed;
   private readonly openTextureKey: string;
@@ -19,6 +20,7 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
 
     super(scene, x, y, definition.closedTextureKey);
     this.rarity = rarity;
+    this.label = definition.label;
     this.openTextureKey = definition.openTextureKey;
 
     scene.add.existing(this);
@@ -32,6 +34,23 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
 
   get status(): ChestState {
     return this.chestState;
+  }
+
+  get isOpen(): boolean {
+    return this.chestState === ChestState.Open;
+  }
+
+  setSelected(selected: boolean): void {
+    if (this.isOpen) {
+      this.clearTint();
+      return;
+    }
+
+    if (selected) {
+      this.setTint(0xf0cb6a);
+    } else {
+      this.clearTint();
+    }
   }
 
   open(): boolean {

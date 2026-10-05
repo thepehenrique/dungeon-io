@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
-import { CONSUMABLE_DEFINITIONS } from '../../config/consumables';
 import { GAME_HEIGHT } from '../../constants/game';
-import type { PotionSlot } from '../../items/consumables/PotionSlot';
+import { getItemDefinition } from '../../items/ItemRegistry';
 import type { ClassAbilityController } from '../../player/ClassAbilityController';
 import type { Player } from '../../player/Player';
+import type { InventorySystem } from '../../systems/InventorySystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
 import type { PlayerClassDefinition } from '../../types/player';
 import type { RunState } from '../../types/run';
@@ -16,7 +16,7 @@ export class Hud {
   private readonly container: Phaser.GameObjects.Container;
   private readonly player: Player;
   private readonly run: RunState;
-  private readonly potionSlot: PotionSlot;
+  private readonly inventory: InventorySystem;
   private readonly classAbility: ClassAbilityController;
   private readonly levelText: Phaser.GameObjects.Text;
   private readonly killsText: Phaser.GameObjects.Text;
@@ -32,7 +32,7 @@ export class Hud {
   private lastLevel = Number.NaN;
   private lastKills = Number.NaN;
   private lastGold = Number.NaN;
-  private lastPotionSignature = '';
+  private lastQuickSlotSignature = '';
   private lastAbilityText = '';
 
   constructor(
@@ -40,12 +40,12 @@ export class Hud {
     player: Player,
     run: RunState,
     playerClass: PlayerClassDefinition,
-    potionSlot: PotionSlot,
+    inventory: InventorySystem,
     classAbility: ClassAbilityController,
   ) {
     this.player = player;
     this.run = run;
-    this.potionSlot = potionSlot;
+    this.inventory = inventory;
     this.classAbility = classAbility;
     this.container = scene.add
       .container(HUD_LAYOUT.x, HUD_LAYOUT.y)
@@ -128,9 +128,6 @@ export class Hud {
 
       return new HudQuickSlot(scene, this.container, x, quickSlotsY, key);
     });
-    this.quickSlots[1].update('Vazio');
-    this.quickSlots[2].update('Vazio');
-
     const abilityX =
       HUD_LAYOUT.quickSlots.width * 3 +
       HUD_LAYOUT.quickSlots.gap * 2 +
@@ -175,7 +172,12 @@ export class Hud {
   }
 
   update(): void {
-    const potionSignature = `${this.potionSlot.type ?? 'EMPTY'}:${this.potionSlot.quantity}`;
+    const quickSlotSignature = [0, 1, 2]
+      .map((index) => {
+        const definitionId = this.inventory.getQuickSlotDefinitionId(index);
+        return `${definitionId ?? 'EMPTY'}:${definitionId ? this.inventory.getQuantity(definitionId) : 0}`;
+      })
+      .join('|');
     const abilityText = this.classAbility.hudText;
 
     if (
@@ -213,14 +215,20 @@ export class Hud {
       this.goldText.setText(`Ouro: ${this.run.gold}`);
     }
 
-    if (potionSignature !== this.lastPotionSignature) {
-      this.lastPotionSignature = potionSignature;
-      const potionType = this.potionSlot.type;
-      this.quickSlots[0].update(
-        potionType === null
-          ? 'Vazio'
-          : `${CONSUMABLE_DEFINITIONS[potionType].name} x${this.potionSlot.quantity}`,
-      );
+    if (quickSlotSignature !== this.lastQuickSlotSignature) {
+      this.lastQuickSlotSignature = quickSlotSignature;
+
+      for (let index = 0; index < this.quickSlots.length; index += 1) {
+        const definitionId = this.inventory.getQuickSlotDefinitionId(index);
+        const definition = definitionId
+          ? getItemDefinition(definitionId)
+          : null;
+        this.quickSlots[index].update(
+          definition
+            ? `${definition.name} x${this.inventory.getQuantity(definition.id)}`
+            : 'Vazio',
+        );
+      }
     }
 
     if (abilityText !== this.lastAbilityText) {

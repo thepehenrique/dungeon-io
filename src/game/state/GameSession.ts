@@ -1,3 +1,4 @@
+import { createInitialInventoryState } from '../config/inventory';
 import type { PlayerClass } from '../types/player';
 import { RunEndReason, type RunState } from '../types/run';
 
@@ -17,10 +18,7 @@ export class GameSession {
       experience: 0,
       kills: 0,
       gold: 0,
-      potionSlot: {
-        type: null,
-        quantity: 0,
-      },
+      inventory: createInitialInventoryState(),
       elapsedSeconds: 0,
     };
 

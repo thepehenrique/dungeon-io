@@ -2,8 +2,7 @@ import Phaser from 'phaser';
 
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
-import { CONSUMABLE_PRESENTATION } from '../config/consumables';
-import { LOOT_PRESENTATION } from '../config/loot';
+import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
 import { PLAYER_CLASSES } from '../config/playerClasses';
 import { PROGRESSION_CONFIG } from '../config/progression';
 import {
@@ -15,43 +14,50 @@ import { TilemapDungeon } from '../dungeon/TilemapDungeon';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { ChestManager } from '../items/chests/ChestManager';
-import { ConsumableManager } from '../items/consumables/ConsumableManager';
-import { PotionSlot } from '../items/consumables/PotionSlot';
 import { Player } from '../player/Player';
 import { PlayerController } from '../player/PlayerController';
 import { ProjectileManager } from '../projectiles/ProjectileManager';
 import { getGameSession } from '../state/getGameSession';
 import { CombatSystem } from '../systems/CombatSystem';
+import { DropSystem } from '../systems/DropSystem';
 import { EquipmentSystem } from '../systems/EquipmentSystem';
-import { LootSystem } from '../systems/LootSystem';
+import { InteractionSystem } from '../systems/InteractionSystem';
+import { InventorySystem } from '../systems/InventorySystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
+import { QuickSlotSystem } from '../systems/QuickSlotSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import {
   AttackKind,
   type Damageable,
   type DamageResult,
 } from '../types/combat';
-import { LootDelivery } from '../types/loot';
 import type { UpgradeDefinition } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
 import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 import { LevelUpView } from '../../ui/level-up/LevelUpView';
+import { InventoryView } from '../../ui/inventory/InventoryView';
 
 export class DungeonScene extends Phaser.Scene {
   private playerController: PlayerController | null = null;
   private projectileManager: ProjectileManager | null = null;
-  private consumableManager: ConsumableManager | null = null;
+  private dropSystem: DropSystem | null = null;
   private enemyManager: EnemyManager | null = null;
   private player: Player | null = null;
   private hud: Hud | null = null;
   private waveCountdownText: Phaser.GameObjects.Text | null = null;
   private progressionSystem: ProgressionSystem | null = null;
+  private inventorySystem: InventorySystem | null = null;
+  private equipmentSystem: EquipmentSystem | null = null;
+  private quickSlotSystem: QuickSlotSystem | null = null;
+  private interactionSystem: InteractionSystem | null = null;
+  private inventoryView: InventoryView | null = null;
+  private inventoryKey: Phaser.Input.Keyboard.Key | null = null;
   private readonly upgradeSystem = new UpgradeSystem();
-  private readonly lootSystem = new LootSystem();
   private levelUpView: LevelUpView | null = null;
   private readonly pendingUpgradeLevels: number[] = [];
   private isChoosingUpgrade = false;
+  private isInventoryOpen = false;
   private gameOverPending = false;
 
   constructor() {
@@ -84,15 +90,40 @@ export class DungeonScene extends Phaser.Scene {
     this.progressionSystem = new ProgressionSystem(run, (newLevel) => {
       this.queueLevelUp(newLevel);
     });
+    this.dropSystem = new DropSystem(
+      this,
+      player,
+      run,
+      dungeon.walls,
+      ({ x, y, quantity }) => {
+        this.hud?.update();
+        this.showLootFeedback(
+          x,
+          y,
+          `+${quantity} ouro`,
+          DROP_CONFIG.goldColor,
+        );
+      },
+    );
 
     const combatSystem = new CombatSystem(
       this,
       (target) => {
         if (target instanceof Enemy) {
+          if (this.gameOverPending) {
+            return;
+          }
+
           run.kills += 1;
           const experienceReward = target.stats.experienceReward;
           this.showExperienceGain(target.x, target.y, experienceReward);
           this.progressionSystem?.addExperience(experienceReward);
+          this.dropSystem?.spawnDrops(
+            target.dropTableId,
+            target.x,
+            target.y,
+            { playerClass: player.playerClass },
+          );
           return;
         }
 
@@ -118,47 +149,38 @@ export class DungeonScene extends Phaser.Scene {
     );
 
     this.physics.add.collider(player, dungeon.walls);
-    const equipmentSystem = new EquipmentSystem(player);
-    const potionSlot = new PotionSlot(run.potionSlot);
-    this.consumableManager = new ConsumableManager(
+    this.inventorySystem = new InventorySystem(run.inventory);
+    this.equipmentSystem = new EquipmentSystem(player, this.inventorySystem);
+    this.quickSlotSystem = new QuickSlotSystem(this.inventorySystem, player);
+    const chestManager = new ChestManager(
       this,
       player,
-      potionSlot,
-      ({ x, y, color, message, slotChanged }) => {
-        if (slotChanged) {
-          this.hud?.update();
-        }
-
-        this.showLootFeedback(x, y, message, color);
-      },
+      dungeon.getChestSpawns(),
     );
-    new ChestManager(
+    this.interactionSystem = new InteractionSystem(
       this,
       player,
+      this.inventorySystem,
+      this.dropSystem,
+      chestManager,
       (chest) => {
-        const lootResult = this.lootSystem.collectChestLoot(chest.rarity, {
-          playerClass: player.playerClass,
-          run,
-          equipEquipment: (equipment) => equipmentSystem.equip(equipment),
-        });
+        const tableId = CHEST_DROP_TABLES[chest.rarity];
 
-        if (lootResult.delivery === LootDelivery.Pickup) {
-          this.consumableManager?.spawn(
-            lootResult.consumableType,
-            chest.x + CONSUMABLE_PRESENTATION.chestDropOffsetX,
-            chest.y + CONSUMABLE_PRESENTATION.chestDropOffsetY,
-          );
-          return;
+        if (!tableId) {
+          throw new Error(`No drop table configured for chest: ${chest.rarity}`);
         }
 
-        this.showLootFeedback(
+        this.dropSystem?.spawnDrops(
+          tableId,
           chest.x,
-          chest.y,
-          lootResult.message,
-          lootResult.drop.definition.color,
+          chest.y + DROP_CONFIG.chestSpawnOffsetY,
+          { playerClass: player.playerClass },
         );
       },
-      dungeon.getChestSpawns(),
+      ({ x, y, message, color }) => {
+        this.hud?.update();
+        this.showLootFeedback(x, y, message, color);
+      },
     );
     this.enemyManager = new EnemyManager(
       this,
@@ -214,24 +236,22 @@ export class DungeonScene extends Phaser.Scene {
       this,
       player,
       primaryWeapon,
-      () => {
-        const result = potionSlot.use(player);
+      () => this.interactionSystem?.interact(),
+      (index) => {
+        const result = this.quickSlotSystem?.use(index);
 
         if (!result) {
           return;
         }
 
         this.hud?.update();
-        this.showLootFeedback(
-          player.x,
-          player.y,
-          result.message,
-          result.consumed
-            ? result.definition.color
-            : CONSUMABLE_PRESENTATION.fullHealthColor,
-        );
+        this.showLootFeedback(player.x, player.y, result.message, result.color);
       },
     );
+    this.inventoryKey = this.input.keyboard?.addKey(
+      Phaser.Input.Keyboard.KeyCodes.TAB,
+      true,
+    ) ?? null;
 
     this.cameras.main.startFollow(player, true, 0.12, 0.12);
     this.cameras.main.setDeadzone(GAME_WIDTH * 0.12, GAME_HEIGHT * 0.12);
@@ -242,24 +262,36 @@ export class DungeonScene extends Phaser.Scene {
       player,
       run,
       PLAYER_CLASSES[run.playerClass],
-      potionSlot,
+      this.inventorySystem,
       this.playerController.classAbility,
     );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.inventoryKey) {
+        this.input.keyboard?.removeKey(this.inventoryKey, true, true);
+      }
       this.levelUpView?.destroy();
-      this.consumableManager?.destroy();
+      this.inventoryView?.destroy();
+      this.interactionSystem?.destroy();
+      this.dropSystem?.destroy();
       this.playerController?.destroy();
       this.playerController = null;
       this.projectileManager = null;
-      this.consumableManager = null;
+      this.dropSystem = null;
       this.enemyManager = null;
       this.player = null;
       this.hud = null;
       this.waveCountdownText = null;
       this.progressionSystem = null;
+      this.inventorySystem = null;
+      this.equipmentSystem = null;
+      this.quickSlotSystem = null;
+      this.interactionSystem = null;
+      this.inventoryView = null;
+      this.inventoryKey = null;
       this.levelUpView = null;
       this.pendingUpgradeLevels.length = 0;
       this.isChoosingUpgrade = false;
+      this.isInventoryOpen = false;
       this.gameOverPending = false;
     });
   }
@@ -267,12 +299,28 @@ export class DungeonScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     this.hud?.update();
 
+    if (
+      this.inventoryKey &&
+      Phaser.Input.Keyboard.JustDown(this.inventoryKey) &&
+      !this.isChoosingUpgrade &&
+      !this.gameOverPending
+    ) {
+      this.toggleInventory();
+    }
+
+    this.interactionSystem?.update(
+      !this.isChoosingUpgrade && !this.isInventoryOpen && !this.gameOverPending,
+    );
+
     if (this.gameOverPending) {
       this.scene.start(SCENE_KEYS.GAME_OVER);
       return;
     }
 
-    if (this.isChoosingUpgrade) {
+    if (this.isChoosingUpgrade || this.isInventoryOpen) {
+      if (this.isInventoryOpen) {
+        this.playerController?.discardActionPresses();
+      }
       return;
     }
 
@@ -380,7 +428,7 @@ export class DungeonScene extends Phaser.Scene {
       targets: text,
       y: text.y - 34,
       alpha: 0,
-      duration: LOOT_PRESENTATION.collectionTextDurationMs,
+      duration: DROP_CONFIG.feedbackDurationMs,
       ease: 'Quad.Out',
       onComplete: () => text.destroy(),
     });
@@ -422,7 +470,13 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
-    this.upgradeSystem.apply(upgrade, this.player.stats);
+    if (this.equipmentSystem) {
+      this.equipmentSystem.applyStatChange(() => {
+        this.upgradeSystem.apply(upgrade, this.player!.stats);
+      });
+    } else {
+      this.upgradeSystem.apply(upgrade, this.player.stats);
+    }
     this.levelUpView.destroy();
     this.levelUpView = null;
     this.showNextUpgradeSelection();
@@ -437,6 +491,90 @@ export class DungeonScene extends Phaser.Scene {
     this.playerController?.classAbility.suspend();
     this.physics.world.pause();
     this.tweens.pauseAll();
+  }
+
+  private toggleInventory(): void {
+    if (this.isInventoryOpen) {
+      this.closeInventory();
+    } else {
+      this.openInventory();
+    }
+  }
+
+  private openInventory(): void {
+    if (
+      this.isInventoryOpen ||
+      this.isChoosingUpgrade ||
+      this.gameOverPending ||
+      !this.player ||
+      !this.inventorySystem ||
+      !this.equipmentSystem ||
+      !this.quickSlotSystem ||
+      !this.dropSystem
+    ) {
+      return;
+    }
+
+    const uiRoot = document.querySelector<HTMLElement>('#ui-root');
+
+    if (!uiRoot) {
+      throw new Error('Inventory UI cannot be created without its root.');
+    }
+
+    this.isInventoryOpen = true;
+    this.player.setVelocity(0, 0);
+    this.physics.world.pause();
+    this.tweens.pauseAll();
+    this.time.paused = true;
+    this.interactionSystem?.update(false);
+    this.inventoryView = new InventoryView(
+      uiRoot,
+      this.inventorySystem,
+      this.equipmentSystem,
+      {
+        equip: (index) => this.equipmentSystem!.equipFromInventory(index),
+        unequip: (slot) => this.equipmentSystem!.unequip(slot),
+        use: (definitionId) => {
+          const result = this.quickSlotSystem!.useConsumable(definitionId);
+          return result
+            ? { success: result.used, message: result.message }
+            : { success: false, message: 'Consumível indisponível' };
+        },
+        assignQuickSlot: (definitionId, index) =>
+          this.inventorySystem!.assignQuickSlot(index, definitionId),
+        discard: (index) => {
+          const removed = this.inventorySystem!.removeSlot(index);
+
+          if (!removed) {
+            return { success: false, message: 'Item não encontrado' };
+          }
+
+          const definition = this.inventorySystem!.getDefinition(removed);
+          this.dropSystem!.spawnExistingItem(
+            removed.item,
+            removed.quantity,
+            this.player!.x,
+            this.player!.y,
+          );
+          return { success: true, message: `${definition.name} descartado` };
+        },
+        close: () => this.closeInventory(),
+      },
+    );
+  }
+
+  private closeInventory(): void {
+    if (!this.isInventoryOpen) {
+      return;
+    }
+
+    this.inventoryView?.destroy();
+    this.inventoryView = null;
+    this.time.paused = false;
+    this.physics.world.resume();
+    this.tweens.resumeAll();
+    this.isInventoryOpen = false;
+    this.hud?.update();
   }
 
   private resumeAction(): void {

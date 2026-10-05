@@ -5,15 +5,12 @@ import type { Player } from '../../player/Player';
 import type { ChestSpawnDefinition } from '../../types/chest';
 import { Chest } from './Chest';
 
-export type ChestOpenedHandler = (chest: Chest) => void;
-
 export class ChestManager {
   readonly group: Phaser.Physics.Arcade.StaticGroup;
 
   constructor(
     scene: Phaser.Scene,
     player: Player,
-    onChestOpened: ChestOpenedHandler,
     spawns: readonly ChestSpawnDefinition[] = INITIAL_CHEST_SPAWNS,
   ) {
     this.group = scene.physics.add.staticGroup();
@@ -23,10 +20,12 @@ export class ChestManager {
       this.group.add(chest);
     }
 
-    scene.physics.add.collider(player, this.group, (_player, chestObject) => {
-      if (chestObject instanceof Chest && chestObject.open()) {
-        onChestOpened(chestObject);
-      }
-    });
+    scene.physics.add.collider(player, this.group);
+  }
+
+  getChests(): readonly Chest[] {
+    return this.group
+      .getChildren()
+      .filter((child): child is Chest => child instanceof Chest);
   }
 }

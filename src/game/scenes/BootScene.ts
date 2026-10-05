@@ -6,6 +6,7 @@ import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
 import { createChestPlaceholderTextures } from '../items/chests/chestTextures';
 import { createConsumablePlaceholderTextures } from '../items/consumables/consumableTextures';
+import { createWorldItemPlaceholderTextures } from '../items/world/worldItemTextures';
 import {
   createArcherAnimations,
   preloadArcherSprites,
@@ -36,6 +37,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     createChestPlaceholderTextures(this);
     createConsumablePlaceholderTextures(this);
+    createWorldItemPlaceholderTextures(this);
     createDungeonPlaceholderTextures(this);
     createEnemyPlaceholderTextures(this);
     createPlayerPlaceholderTextures(this);

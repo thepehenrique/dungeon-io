@@ -1,3 +1,5 @@
+import type { DropTableId } from './drop';
+
 export enum EnemyType {
   Goblin = 'GOBLIN',
   SkeletonWarrior = 'SKELETON_WARRIOR',
@@ -37,6 +39,7 @@ export interface EnemyStats {
 
 export interface EnemyDefinition {
   readonly type: EnemyType;
+  readonly dropTableId: DropTableId;
   readonly label: string;
   readonly color: number;
   readonly textureKey: string;
