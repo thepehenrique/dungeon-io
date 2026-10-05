@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
 import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
 import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
@@ -11,6 +12,14 @@ import { GameSession } from '../state/GameSession';
 export class BootScene extends Phaser.Scene {
   constructor() {
     super(SCENE_KEYS.BOOT);
+  }
+
+  preload(): void {
+    this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
+
+    for (const tileset of DUNGEON_TILESETS) {
+      this.load.image(tileset.key, `assets/dungeon/${tileset.file}`);
+    }
   }
 
   create(): void {

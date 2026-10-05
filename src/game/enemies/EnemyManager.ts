@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { INITIAL_ENEMY_SPAWNS } from '../config/enemies';
 import type { Player } from '../player/Player';
+import type { EnemySpawnDefinition } from '../types/enemy';
 import { Enemy } from './Enemy';
 import { createEnemy } from './createEnemy';
 
@@ -17,12 +18,13 @@ export class EnemyManager {
     player: Player,
     walls: Phaser.Physics.Arcade.StaticGroup,
     onEnemyAttack: (attacker: Enemy, target: Player) => void,
+    spawns: readonly EnemySpawnDefinition[] = INITIAL_ENEMY_SPAWNS,
   ) {
     this.player = player;
     this.onEnemyAttack = onEnemyAttack;
     this.group = scene.physics.add.group({ allowGravity: false });
 
-    for (const spawn of INITIAL_ENEMY_SPAWNS) {
+    for (const spawn of spawns) {
       this.group.add(createEnemy(scene, spawn));
     }
 

@@ -43,6 +43,7 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - `src/game/items`: baús e objetos coletáveis da dungeon.
 - `src/game/ui/hud`: HUD do Phaser e barras de status reutilizáveis.
 - `src/game/dungeon`: construção do mapa fixo e paredes.
+- `public/assets/dungeon`: tilesets licenciados da CraftPix e mapa editável no Tiled.
 - `src/game/state`: estado centralizado da run.
 - `src/game/types`: contratos TypeScript do domínio.
 - `src/ui`: interface HTML externa ao canvas.
@@ -82,6 +83,7 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - A dungeon fixa possui seis salas visualmente distintas, conectadas por corredores.
 - Tochas animadas, áreas escuras, teias, ossos, caixas e barris ambientam o mapa.
 - Caixas e barris funcionam como obstáculos físicos para jogador, inimigos e projéteis.
+- A dungeon utiliza um Tilemap inicial `38×28` editável no Tiled, com três salas, corredores, paredes, colisões e spawns em camadas próprias.
 - É possível reiniciar a run ou voltar ao menu.
 
 O fluxo jogável básico do menu ao Game Over está funcional. A geração procedural de

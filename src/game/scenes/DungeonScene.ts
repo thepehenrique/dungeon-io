@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DUNGEON_SPAWN, DUNGEON_STYLE } from '../config/dungeon';
+import { DUNGEON_STYLE } from '../config/dungeon';
 import { LOOT_PRESENTATION } from '../config/loot';
 import { PLAYER_CLASSES } from '../config/playerClasses';
 import { PROGRESSION_CONFIG } from '../config/progression';
@@ -8,10 +8,8 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
   SCENE_KEYS,
-  WORLD_HEIGHT,
-  WORLD_WIDTH,
 } from '../constants/game';
-import { FixedDungeon } from '../dungeon/FixedDungeon';
+import { TilemapDungeon } from '../dungeon/TilemapDungeon';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { ChestManager } from '../items/chests/ChestManager';
@@ -60,13 +58,14 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-
-    const dungeon = new FixedDungeon(this);
+    const dungeon = new TilemapDungeon(this);
     dungeon.create();
+    this.physics.world.setBounds(0, 0, dungeon.width, dungeon.height);
+    this.cameras.main.setBounds(0, 0, dungeon.width, dungeon.height);
 
-    const player = new Player(this, DUNGEON_SPAWN.x, DUNGEON_SPAWN.y, {
+    const playerSpawn = dungeon.getPlayerSpawn();
+
+    const player = new Player(this, playerSpawn.x, playerSpawn.y, {
       id: run.playerId,
       name: run.playerName,
       playerClass: run.playerClass,
@@ -97,15 +96,20 @@ export class DungeonScene extends Phaser.Scene {
 
     this.physics.add.collider(player, dungeon.walls);
     const equipmentSystem = new EquipmentSystem(player);
-    new ChestManager(this, player, (chest) => {
-      const collectedLoot = this.lootSystem.collectChestLoot(chest.rarity, {
-        playerStats: player.stats,
-        playerClass: player.playerClass,
-        run,
-        equipEquipment: (equipment) => equipmentSystem.equip(equipment),
-      });
-      this.showCollectedLoot(chest.x, chest.y, collectedLoot);
-    });
+    new ChestManager(
+      this,
+      player,
+      (chest) => {
+        const collectedLoot = this.lootSystem.collectChestLoot(chest.rarity, {
+          playerStats: player.stats,
+          playerClass: player.playerClass,
+          run,
+          equipEquipment: (equipment) => equipmentSystem.equip(equipment),
+        });
+        this.showCollectedLoot(chest.x, chest.y, collectedLoot);
+      },
+      dungeon.getChestSpawns(),
+    );
     this.enemyManager = new EnemyManager(
       this,
       player,
@@ -117,6 +121,7 @@ export class DungeonScene extends Phaser.Scene {
           attackKind: AttackKind.Melee,
         });
       },
+      dungeon.getEnemySpawns(),
     );
     this.projectileManager = new ProjectileManager(this, dungeon.walls);
     this.projectileManager.registerEnemyTargets(

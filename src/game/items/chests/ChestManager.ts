@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { INITIAL_CHEST_SPAWNS } from '../../config/chests';
 import type { Player } from '../../player/Player';
+import type { ChestSpawnDefinition } from '../../types/chest';
 import { Chest } from './Chest';
 
 export type ChestOpenedHandler = (chest: Chest) => void;
@@ -13,10 +14,11 @@ export class ChestManager {
     scene: Phaser.Scene,
     player: Player,
     onChestOpened: ChestOpenedHandler,
+    spawns: readonly ChestSpawnDefinition[] = INITIAL_CHEST_SPAWNS,
   ) {
     this.group = scene.physics.add.staticGroup();
 
-    for (const spawn of INITIAL_CHEST_SPAWNS) {
+    for (const spawn of spawns) {
       const chest = new Chest(scene, spawn.x, spawn.y, spawn.rarity);
       this.group.add(chest);
     }
