@@ -1,4 +1,5 @@
 import { PlayerClass, type PlayerClassDefinition } from '../types/player';
+import { COMBAT_BALANCE } from './combat';
 
 export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>> = {
   [PlayerClass.Warrior]: {
@@ -14,7 +15,8 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       movementSpeed: 210,
       attackSpeed: 0.85,
       attackRange: 82,
-      criticalChance: 0.05,
+      criticalChance: COMBAT_BALANCE.defaultCriticalChance,
+      criticalMultiplier: COMBAT_BALANCE.defaultCriticalMultiplier,
     },
   },
   [PlayerClass.Archer]: {
@@ -31,6 +33,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       attackSpeed: 1.25,
       attackRange: 560,
       criticalChance: 0.08,
+      criticalMultiplier: COMBAT_BALANCE.defaultCriticalMultiplier,
     },
   },
   [PlayerClass.Mage]: {
@@ -46,7 +49,8 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       movementSpeed: 240,
       attackSpeed: 1,
       attackRange: 360,
-      criticalChance: 0.05,
+      criticalChance: COMBAT_BALANCE.defaultCriticalChance,
+      criticalMultiplier: COMBAT_BALANCE.defaultCriticalMultiplier,
     },
   },
 };

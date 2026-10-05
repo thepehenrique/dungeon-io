@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 
+import { COMBAT_BALANCE } from '../config/combat';
 import { ENEMY_DEFINITIONS } from '../config/enemies';
 import type { Player } from '../player/Player';
-import type { CombatStats } from '../types/combat';
+import type { CombatStats, DamageRequest } from '../types/combat';
 import { EnemyState, type EnemyStats, type EnemyType } from '../types/enemy';
 import { createEnemyStats } from './createEnemyStats';
 
@@ -54,6 +55,23 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   get isDead(): boolean {
     return this.currentAiState === EnemyState.Dead;
+  }
+
+  getIncomingDamageMultiplier(_request: DamageRequest): number {
+    return 1;
+  }
+
+  playHitFeedback(): void {
+    if (this.isDead || !this.active) {
+      return;
+    }
+
+    this.setTintFill(0xffffff);
+    this.scene.time.delayedCall(COMBAT_BALANCE.hitFlashDurationMs, () => {
+      if (this.active && !this.isDead) {
+        this.applyStatePresentation();
+      }
+    });
   }
 
   updateAI(player: Player, onAttack: (attacker: Enemy, target: Player) => void): void {

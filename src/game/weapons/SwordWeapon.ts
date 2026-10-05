@@ -29,6 +29,10 @@ export class SwordWeapon extends PrimaryWeapon {
       direction: direction.clone(),
       range: this.owner.stats.attackRange,
       arc: SWORD_CONFIG.swingArc,
+      critical: {
+        chance: this.owner.stats.criticalChance,
+        multiplier: this.owner.stats.criticalMultiplier,
+      },
     });
   }
 }

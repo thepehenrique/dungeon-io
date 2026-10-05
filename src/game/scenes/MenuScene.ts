@@ -18,6 +18,7 @@ export class MenuScene extends Phaser.Scene {
       throw new Error('UI root element was not found.');
     }
 
+    this.input.keyboard?.clearCaptures();
     getGameSession(this).clear();
     this.menuView = new MenuView(uiRoot, ({ playerName, playerClass }) => {
       getGameSession(this).startRun(playerName, playerClass);

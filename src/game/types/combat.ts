@@ -18,19 +18,31 @@ export interface Damageable {
   readonly isDead: boolean;
   readonly x: number;
   readonly y: number;
+  getIncomingDamageMultiplier(request: DamageRequest): number;
+  playHitFeedback(): void;
   die(): void;
+}
+
+export interface CriticalStrikeData {
+  readonly chance: number;
+  readonly multiplier: number;
 }
 
 export interface DamageRequest {
   readonly sourceId: string;
   readonly amount: number;
   readonly attackKind: AttackKind;
+  readonly sourcePosition?: Phaser.Math.Vector2;
+  readonly critical?: CriticalStrikeData;
 }
 
 export interface DamageResult {
   readonly appliedDamage: number;
   readonly remainingHealth: number;
   readonly killed: boolean;
+  readonly critical: boolean;
+  readonly ignored: boolean;
+  readonly damageReductionApplied: boolean;
 }
 
 export interface MeleeAttackData extends DamageRequest {

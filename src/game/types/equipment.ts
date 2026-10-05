@@ -26,7 +26,8 @@ export type EquipmentStat =
   | 'movementSpeed'
   | 'attackSpeed'
   | 'attackRange'
-  | 'criticalChance';
+  | 'criticalChance'
+  | 'criticalMultiplier';
 
 export interface EquipmentModifier {
   readonly stat: EquipmentStat;

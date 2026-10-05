@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
 import { CONSUMABLE_PRESENTATION } from '../config/consumables';
 import { LOOT_PRESENTATION } from '../config/loot';
@@ -25,7 +26,11 @@ import { EquipmentSystem } from '../systems/EquipmentSystem';
 import { LootSystem } from '../systems/LootSystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
-import { AttackKind } from '../types/combat';
+import {
+  AttackKind,
+  type Damageable,
+  type DamageResult,
+} from '../types/combat';
 import { LootDelivery } from '../types/loot';
 import type { UpgradeDefinition } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
@@ -80,24 +85,37 @@ export class DungeonScene extends Phaser.Scene {
       this.queueLevelUp(newLevel);
     });
 
-    const combatSystem = new CombatSystem((target) => {
-      if (target instanceof Enemy) {
-        run.kills += 1;
-        const experienceReward = target.stats.experienceReward;
-        this.showExperienceGain(target.x, target.y, experienceReward);
-        this.progressionSystem?.addExperience(experienceReward);
-        return;
-      }
-
-      if (target instanceof Player) {
-        if (this.gameOverPending) {
+    const combatSystem = new CombatSystem(
+      this,
+      (target) => {
+        if (target instanceof Enemy) {
+          run.kills += 1;
+          const experienceReward = target.stats.experienceReward;
+          this.showExperienceGain(target.x, target.y, experienceReward);
+          this.progressionSystem?.addExperience(experienceReward);
           return;
         }
 
-        session.finishRun(RunEndReason.Defeated);
-        this.gameOverPending = true;
-      }
-    });
+        if (target instanceof Player) {
+          if (this.gameOverPending) {
+            return;
+          }
+
+          session.finishRun(RunEndReason.Defeated);
+          this.gameOverPending = true;
+        }
+      },
+      (target, result, request) => {
+        this.showDamageFeedback(target, result);
+
+        if (result.critical || request.attackKind === AttackKind.Melee) {
+          this.cameras.main.shake(
+            COMBAT_BALANCE.impactShakeDurationMs,
+            COMBAT_BALANCE.impactShakeIntensity,
+          );
+        }
+      },
+    );
 
     this.physics.add.collider(player, dungeon.walls);
     const equipmentSystem = new EquipmentSystem(player);
@@ -151,6 +169,7 @@ export class DungeonScene extends Phaser.Scene {
           sourceId: attacker.enemyId,
           amount: attacker.stats.damage,
           attackKind: AttackKind.Melee,
+          sourcePosition: new Phaser.Math.Vector2(attacker.x, attacker.y),
         });
       },
       dungeon.getEnemySpawns(),
@@ -178,6 +197,8 @@ export class DungeonScene extends Phaser.Scene {
           sourceId: projectile.ownerId,
           amount: projectile.damage,
           attackKind: projectile.attackKind,
+          sourcePosition: new Phaser.Math.Vector2(projectile.x, projectile.y),
+          critical: projectile.critical,
         });
       },
     );
@@ -223,6 +244,7 @@ export class DungeonScene extends Phaser.Scene {
       PLAYER_CLASSES[run.playerClass],
       equipmentSystem,
       potionSlot,
+      this.playerController.classAbility,
     );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.levelUpView?.destroy();
@@ -255,7 +277,7 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
-    this.playerController?.update();
+    this.playerController?.update(delta);
     this.projectileManager?.update();
     this.enemyManager?.update(delta);
     this.updateWaveCountdown();
@@ -300,6 +322,38 @@ export class DungeonScene extends Phaser.Scene {
       y: text.y - 32,
       alpha: 0,
       duration: PROGRESSION_CONFIG.experienceTextDurationMs,
+      ease: 'Quad.Out',
+      onComplete: () => text.destroy(),
+    });
+  }
+
+  private showDamageFeedback(
+    target: Damageable,
+    result: DamageResult,
+  ): void {
+    const prefix = result.critical ? 'CRIT ' : '';
+    const color = result.critical
+      ? '#ffd36a'
+      : result.damageReductionApplied
+        ? '#80c9ff'
+        : '#f4f5f7';
+    const text = this.add
+      .text(target.x, target.y - 30, `${prefix}${result.appliedDamage}`, {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: result.critical ? '20px' : '17px',
+        fontStyle: 'bold',
+        color,
+        stroke: '#080a0d',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(140);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - COMBAT_BALANCE.damageTextRise,
+      alpha: 0,
+      duration: COMBAT_BALANCE.damageTextDurationMs,
       ease: 'Quad.Out',
       onComplete: () => text.destroy(),
     });
@@ -381,6 +435,7 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     this.isChoosingUpgrade = true;
+    this.playerController?.classAbility.suspend();
     this.physics.world.pause();
     this.tweens.pauseAll();
   }

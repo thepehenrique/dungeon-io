@@ -1,13 +1,13 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
 import {
   CONSUMABLE_DEFINITIONS,
   CONSUMABLE_PRESENTATION,
-} from '../../config/consumables';
-import type { Player } from '../../player/Player';
-import type { ConsumableType } from '../../types/consumable';
-import { ConsumablePickup } from './ConsumablePickup';
-import type { PotionSlot } from './PotionSlot';
+} from "../../config/consumables";
+import type { Player } from "../../player/Player";
+import type { ConsumableType } from "../../types/consumable";
+import { ConsumablePickup } from "./ConsumablePickup";
+import type { PotionSlot } from "./PotionSlot";
 
 export interface ConsumableFeedback {
   readonly x: number;
@@ -28,14 +28,17 @@ export class ConsumableManager {
     scene: Phaser.Scene,
     player: Player,
     potionSlot: PotionSlot,
-    onFeedback: ConsumableFeedbackHandler,
+    onFeedback: ConsumableFeedbackHandler
   ) {
     this.group = scene.physics.add.staticGroup();
     this.overlap = scene.physics.add.overlap(
       player,
       this.group,
       (_playerObject, pickupObject) => {
-        if (!(pickupObject instanceof ConsumablePickup) || !pickupObject.active) {
+        if (
+          !(pickupObject instanceof ConsumablePickup) ||
+          !pickupObject.active
+        ) {
           return;
         }
 
@@ -65,7 +68,7 @@ export class ConsumableManager {
         };
         pickupObject.collect();
         onFeedback(feedback);
-      },
+      }
     );
   }
 
@@ -74,7 +77,7 @@ export class ConsumableManager {
       this.group.scene,
       x,
       y,
-      CONSUMABLE_DEFINITIONS[type],
+      CONSUMABLE_DEFINITIONS[type]
     );
     this.group.add(pickup);
     return pickup;
@@ -82,6 +85,5 @@ export class ConsumableManager {
 
   destroy(): void {
     this.overlap.destroy();
-    this.group.clear(true, true);
   }
 }

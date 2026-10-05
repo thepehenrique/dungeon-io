@@ -21,6 +21,10 @@ export class FireballWeapon extends PrimaryWeapon {
         maxRange: this.owner.stats.attackRange,
         origin: new Phaser.Math.Vector2(this.owner.x, this.owner.y),
         direction: direction.clone(),
+        critical: {
+          chance: this.owner.stats.criticalChance,
+          multiplier: this.owner.stats.criticalMultiplier,
+        },
       }),
     );
   }

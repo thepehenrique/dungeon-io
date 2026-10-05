@@ -13,6 +13,7 @@ export interface PlayerBaseStats {
   readonly attackSpeed: number;
   readonly attackRange: number;
   readonly criticalChance: number;
+  readonly criticalMultiplier: number;
 }
 
 export interface PlayerStats {
@@ -24,6 +25,7 @@ export interface PlayerStats {
   attackSpeed: number;
   attackRange: number;
   criticalChance: number;
+  criticalMultiplier: number;
 }
 
 export interface PlayerClassDefinition {

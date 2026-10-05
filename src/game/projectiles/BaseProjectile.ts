@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 
-import type { AttackKind, ProjectileDefinition } from '../types/combat';
+import type {
+  AttackKind,
+  CriticalStrikeData,
+  ProjectileDefinition,
+} from '../types/combat';
 
 export interface ProjectileLaunchData {
   readonly ownerId: string;
@@ -8,12 +12,14 @@ export interface ProjectileLaunchData {
   readonly maxRange?: number;
   readonly origin: Phaser.Math.Vector2;
   readonly direction: Phaser.Math.Vector2;
+  readonly critical?: CriticalStrikeData;
 }
 
 export abstract class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
   abstract readonly attackKind: AttackKind;
   readonly ownerId: string;
   readonly damage: number;
+  readonly critical?: CriticalStrikeData;
 
   private readonly launchPosition: Phaser.Math.Vector2;
   private readonly launchVelocity: Phaser.Math.Vector2;
@@ -33,6 +39,7 @@ export abstract class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
 
     this.ownerId = launchData.ownerId;
     this.damage = launchData.damage;
+    this.critical = launchData.critical;
     this.launchPosition = spawnPosition;
     this.launchVelocity = launchData.direction
       .clone()

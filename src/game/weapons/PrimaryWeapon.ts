@@ -14,7 +14,7 @@ export abstract class PrimaryWeapon {
   }
 
   tryAttack(target: Phaser.Math.Vector2): boolean {
-    if (this.scene.time.now < this.nextAttackAt) {
+    if (!this.owner.canAttack || this.scene.time.now < this.nextAttackAt) {
       return false;
     }
 

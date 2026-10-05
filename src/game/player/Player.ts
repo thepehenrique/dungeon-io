@@ -1,7 +1,12 @@
 import Phaser from 'phaser';
 
+import {
+  MAGE_PROTECTION_CONFIG,
+  WARRIOR_BLOCK_CONFIG,
+} from '../config/classAbilities';
+import { COMBAT_BALANCE } from '../config/combat';
 import { PLAYER_MOVEMENT } from '../config/playerMovement';
-import type { CombatStats } from '../types/combat';
+import type { CombatStats, DamageRequest } from '../types/combat';
 import { PlayerClass, type PlayerStats } from '../types/player';
 import { createPlayerStats } from './createPlayerStats';
 import { restoreHealth } from './health';
@@ -44,6 +49,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private archerFacing: ArcherFacing = 'down';
   private archerMoving = false;
   private archerAttacking = false;
+  private readonly aimDirection = new Phaser.Math.Vector2(1, 0);
+  private blocking = false;
+  private dashing = false;
+  private magicProtectionActive = false;
+  private abilityAura: Phaser.GameObjects.Arc | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -83,9 +93,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setCollideWorldBounds(true);
     this.setDepth(10);
+
+    if (this.playerClass === PlayerClass.Mage) {
+      this.abilityAura = scene.add
+        .circle(this.x, this.y, 34, 0x786de8, 0.18)
+        .setStrokeStyle(3, 0xa99cff, 0.9)
+        .setDepth(9)
+        .setVisible(false);
+    }
   }
 
-  move(direction: Phaser.Math.Vector2): void {
+  move(direction: Phaser.Math.Vector2, speed = this.stats.movementSpeed): void {
+    this.updateAbilityAuraPosition();
+
     if (this.dead) {
       this.setVelocity(0, 0);
       return;
@@ -102,13 +122,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    direction.normalize().scale(this.stats.movementSpeed);
+    direction.normalize().scale(speed);
     this.setVelocity(direction.x, direction.y);
     this.updateWarriorMovementAnimation();
     this.updateArcherMovementAnimation();
   }
 
   face(targetX: number, targetY: number): void {
+    const aimX = targetX - this.x;
+    const aimY = targetY - this.y;
+
+    if (aimX !== 0 || aimY !== 0) {
+      this.aimDirection.set(aimX, aimY).normalize();
+    }
+
     if (this.isWarrior) {
       const nextFacing = getWarriorFacing(targetX - this.x, targetY - this.y);
 
@@ -192,6 +219,82 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.dead;
   }
 
+  get canAttack(): boolean {
+    return !this.dead && !this.blocking;
+  }
+
+  getIncomingDamageMultiplier(request: DamageRequest): number {
+    if (this.magicProtectionActive) {
+      return 1 - MAGE_PROTECTION_CONFIG.damageReduction;
+    }
+
+    if (!this.blocking || !request.sourcePosition) {
+      return 1;
+    }
+
+    const directionToSource = new Phaser.Math.Vector2(
+      request.sourcePosition.x - this.x,
+      request.sourcePosition.y - this.y,
+    );
+
+    if (directionToSource.lengthSq() === 0) {
+      return 1;
+    }
+
+    const frontThreshold = Math.cos(WARRIOR_BLOCK_CONFIG.frontalArc / 2);
+    const sourceDot = this.aimDirection.dot(directionToSource.normalize());
+
+    return sourceDot >= frontThreshold
+      ? 1 - WARRIOR_BLOCK_CONFIG.damageReduction
+      : 1;
+  }
+
+  playHitFeedback(): void {
+    if (this.dead) {
+      return;
+    }
+
+    this.setTintFill(0xffffff);
+    this.scene.time.delayedCall(COMBAT_BALANCE.hitFlashDurationMs, () => {
+      if (this.active && !this.dead) {
+        this.refreshAbilityPresentation();
+      }
+    });
+  }
+
+  setBlocking(active: boolean): void {
+    const nextState = this.isWarrior && !this.dead && active;
+
+    if (nextState === this.blocking) {
+      return;
+    }
+
+    this.blocking = nextState;
+    this.refreshAbilityPresentation();
+  }
+
+  setDashing(active: boolean): void {
+    const nextState = this.isArcher && !this.dead && active;
+
+    if (nextState === this.dashing) {
+      return;
+    }
+
+    this.dashing = nextState;
+    this.refreshAbilityPresentation();
+  }
+
+  setMagicProtection(active: boolean): void {
+    const nextState = this.playerClass === PlayerClass.Mage && !this.dead && active;
+
+    if (nextState === this.magicProtectionActive) {
+      return;
+    }
+
+    this.magicProtectionActive = nextState;
+    this.refreshAbilityPresentation();
+  }
+
   heal(amount: number): number {
     if (this.dead) {
       return 0;
@@ -206,8 +309,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.dead = true;
+    this.blocking = false;
+    this.dashing = false;
+    this.magicProtectionActive = false;
     this.setVelocity(0, 0);
-    this.setTint(0x555555);
+    this.refreshAbilityPresentation();
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.enable = false;
@@ -271,5 +377,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private finishArcherBowAttack(): void {
     this.archerAttacking = false;
     this.updateArcherMovementAnimation();
+  }
+
+  private refreshAbilityPresentation(): void {
+    this.clearTint();
+    this.setAlpha(this.dashing ? 0.72 : 1);
+
+    if (this.dead) {
+      this.setTint(0x555555);
+    } else if (this.blocking) {
+      this.setTint(0x9fc8ff);
+    }
+
+    if (this.abilityAura) {
+      this.abilityAura.setVisible(this.magicProtectionActive && !this.dead);
+      this.updateAbilityAuraPosition();
+    }
+  }
+
+  private updateAbilityAuraPosition(): void {
+    this.abilityAura?.setPosition(this.x, this.y);
   }
 }

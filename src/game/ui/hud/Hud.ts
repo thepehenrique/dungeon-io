@@ -4,6 +4,7 @@ import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
 import { CONSUMABLE_DEFINITIONS } from '../../config/consumables';
 import { GAME_HEIGHT } from '../../constants/game';
 import type { PotionSlot } from '../../items/consumables/PotionSlot';
+import type { ClassAbilityController } from '../../player/ClassAbilityController';
 import type { Player } from '../../player/Player';
 import type { EquipmentSystem } from '../../systems/EquipmentSystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
@@ -17,10 +18,12 @@ export class Hud {
   private readonly run: RunState;
   private readonly equipmentSystem: EquipmentSystem;
   private readonly potionSlot: PotionSlot;
+  private readonly classAbility: ClassAbilityController;
   private readonly levelText: Phaser.GameObjects.Text;
   private readonly killsText: Phaser.GameObjects.Text;
   private readonly equipmentText: Phaser.GameObjects.Text;
   private readonly potionSlotText: Phaser.GameObjects.Text;
+  private readonly classAbilityText: Phaser.GameObjects.Text;
   private readonly healthBar: HudBar;
   private readonly experienceBar: HudBar;
 
@@ -32,6 +35,7 @@ export class Hud {
   private lastGold = Number.NaN;
   private lastEquipmentSignature = '';
   private lastPotionSignature = '';
+  private lastAbilityText = '';
 
   constructor(
     scene: Phaser.Scene,
@@ -40,11 +44,13 @@ export class Hud {
     playerClass: PlayerClassDefinition,
     equipmentSystem: EquipmentSystem,
     potionSlot: PotionSlot,
+    classAbility: ClassAbilityController,
   ) {
     this.player = player;
     this.run = run;
     this.equipmentSystem = equipmentSystem;
     this.potionSlot = potionSlot;
+    this.classAbility = classAbility;
     this.container = scene.add
       .container(HUD_LAYOUT.x, HUD_LAYOUT.y)
       .setScrollFactor(0)
@@ -101,6 +107,20 @@ export class Hud {
         fixedWidth: HUD_LAYOUT.width,
       },
     );
+    this.classAbilityText = scene.add.text(
+      0,
+      HUD_LAYOUT.height + 55,
+      '',
+      {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        color: playerClass.cssColor,
+        backgroundColor: '#080c12e8',
+        padding: { x: 14, y: 10 },
+        fixedWidth: HUD_LAYOUT.width,
+      },
+    );
 
     this.container.add([panel, accent, nameText, classText, this.levelText]);
     this.healthBar = new HudBar(scene, this.container, 70, 'VIDA', HUD_COLORS.health);
@@ -115,13 +135,14 @@ export class Hud {
       this.killsText,
       this.equipmentText,
       this.potionSlotText,
+      this.classAbilityText,
     ]);
 
     const controlsText = scene.add
       .text(
         0,
         GAME_HEIGHT - HUD_LAYOUT.y - 24,
-        'WASD mover  ·  Mouse mirar  ·  Clique esquerdo atacar  ·  [1] usar poção',
+        'WASD mover  ·  Mouse mirar  ·  Clique atacar  ·  SPACE habilidade  ·  [1] poção',
         {
           fontFamily: 'Arial, sans-serif',
           fontSize: '13px',
@@ -142,6 +163,7 @@ export class Hud {
     const equippedItems = this.equipmentSystem.getEquippedItems();
     const equipmentSignature = equippedItems.map((item) => item.id).join('|');
     const potionSignature = `${this.potionSlot.type ?? 'EMPTY'}:${this.potionSlot.quantity}`;
+    const abilityText = this.classAbility.hudText;
 
     if (
       this.player.stats.health === this.lastHealth &&
@@ -151,7 +173,8 @@ export class Hud {
       this.run.kills === this.lastKills &&
       this.run.gold === this.lastGold &&
       equipmentSignature === this.lastEquipmentSignature &&
-      potionSignature === this.lastPotionSignature
+      potionSignature === this.lastPotionSignature &&
+      abilityText === this.lastAbilityText
     ) {
       return;
     }
@@ -164,6 +187,7 @@ export class Hud {
     this.lastGold = this.run.gold;
     this.lastEquipmentSignature = equipmentSignature;
     this.lastPotionSignature = potionSignature;
+    this.lastAbilityText = abilityText;
 
     this.levelText.setText(`LV ${this.run.level}`);
     this.killsText.setText(
@@ -180,6 +204,7 @@ export class Hud {
         ? '[1] Vazio'
         : `[1] ${CONSUMABLE_DEFINITIONS[potionType].label} x${this.potionSlot.quantity}`,
     );
+    this.classAbilityText.setText(abilityText);
     this.healthBar.update(this.player.stats.health, this.player.stats.maxHealth);
     this.experienceBar.update(
       this.run.experience,
