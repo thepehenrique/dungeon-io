@@ -45,7 +45,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
       defense: 3,
       movementSpeed: 240,
       attackSpeed: 1,
-      attackRange: 480,
+      attackRange: 360,
       criticalChance: 0.05,
     },
   },

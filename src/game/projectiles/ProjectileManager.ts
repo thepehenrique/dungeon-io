@@ -14,7 +14,10 @@ export class ProjectileManager {
       this.group,
       walls,
       (projectile) => {
-        if (projectile instanceof BaseProjectile) {
+        if (
+          projectile instanceof BaseProjectile
+          && projectile.registerImpact()
+        ) {
           projectile.destroy();
         }
       },
@@ -23,6 +26,7 @@ export class ProjectileManager {
 
   add(projectile: BaseProjectile): void {
     this.group.add(projectile);
+    projectile.launch();
   }
 
   registerEnemyTargets(
@@ -34,7 +38,12 @@ export class ProjectileManager {
       this.group,
       enemies,
       (projectile, enemy) => {
-        if (projectile instanceof BaseProjectile && enemy instanceof Enemy) {
+        if (
+          projectile instanceof BaseProjectile
+          && enemy instanceof Enemy
+          && !enemy.isDead
+          && projectile.registerImpact()
+        ) {
           onHit(projectile, enemy);
           projectile.destroy();
         }

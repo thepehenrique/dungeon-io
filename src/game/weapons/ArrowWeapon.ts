@@ -20,7 +20,7 @@ export class ArrowWeapon extends PrimaryWeapon {
         damage: this.owner.stats.damage,
         maxRange: this.owner.stats.attackRange,
         origin: new Phaser.Math.Vector2(this.owner.x, this.owner.y),
-        direction,
+        direction: direction.clone(),
       }),
     );
   }
