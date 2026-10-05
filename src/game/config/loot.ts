@@ -7,11 +7,11 @@ import type { EquipmentDefinition } from '../types/equipment';
 import {
   LootDelivery,
   LootType,
-  Rarity,
   type LootDefinition,
   type LootTableEntry,
 } from '../types/loot';
 import { ConsumableType } from '../types/consumable';
+import { ItemRarity } from '../types/item';
 
 export const LOOT_PRESENTATION = {
   collectionTextDurationMs: 900,
@@ -21,7 +21,7 @@ export const GOLD_COINS: LootDefinition = {
   id: 'gold-coins',
   type: LootType.Gold,
   delivery: LootDelivery.Immediate,
-  rarity: Rarity.Common,
+  rarity: ItemRarity.Common,
   label: 'Moedas antigas',
   color: '#f0cb6a',
   apply: ({ run }, quantity) => {
@@ -41,9 +41,9 @@ const LEATHER_ARMOR_LOOT = createEquipmentLoot(
   EQUIPMENT_DEFINITIONS.leatherArmor,
 );
 const IRON_SWORD_LOOT = createEquipmentLoot(EQUIPMENT_DEFINITIONS.ironSword);
-const HUNTING_BOW_LOOT = createEquipmentLoot(EQUIPMENT_DEFINITIONS.huntingBow);
-const APPRENTICE_STAFF_LOOT = createEquipmentLoot(
-  EQUIPMENT_DEFINITIONS.apprenticeStaff,
+const SIMPLE_BOW_LOOT = createEquipmentLoot(EQUIPMENT_DEFINITIONS.simpleBow);
+const WOODEN_STAFF_LOOT = createEquipmentLoot(
+  EQUIPMENT_DEFINITIONS.woodenStaff,
 );
 
 export const COMMON_CHEST_LOOT_TABLE: readonly LootTableEntry[] = [
@@ -78,13 +78,13 @@ export const COMMON_CHEST_LOOT_TABLE: readonly LootTableEntry[] = [
     maximumQuantity: 1,
   },
   {
-    loot: HUNTING_BOW_LOOT,
+    loot: SIMPLE_BOW_LOOT,
     weight: 20,
     minimumQuantity: 1,
     maximumQuantity: 1,
   },
   {
-    loot: APPRENTICE_STAFF_LOOT,
+    loot: WOODEN_STAFF_LOOT,
     weight: 20,
     minimumQuantity: 1,
     maximumQuantity: 1,
@@ -97,7 +97,7 @@ function createEquipmentLoot(equipment: EquipmentDefinition): LootDefinition {
     type: LootType.Equipment,
     delivery: LootDelivery.Immediate,
     rarity: equipment.rarity,
-    label: equipment.label,
+    label: equipment.name,
     color: '#79b8ed',
     canDrop: ({ playerClass }) =>
       equipment.allowedClasses.includes(playerClass),
@@ -105,8 +105,8 @@ function createEquipmentLoot(equipment: EquipmentDefinition): LootDefinition {
       const result = equipEquipment(equipment);
 
       return result.replaced
-        ? `Equipado: ${equipment.label} (substituiu ${result.replaced.label})`
-        : `Equipado: ${equipment.label}`;
+        ? `Equipado: ${equipment.name} (substituiu ${result.replaced.name})`
+        : `Equipado: ${equipment.name}`;
     },
   };
 }
@@ -118,8 +118,8 @@ function createConsumableLoot(type: ConsumableType): LootDefinition {
     id: `consumable-${consumable.id}`,
     type: LootType.Consumable,
     delivery: LootDelivery.Pickup,
-    rarity: Rarity.Common,
-    label: consumable.label,
+    rarity: consumable.rarity,
+    label: consumable.name,
     color: consumable.color,
     consumableType: type,
   };

@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 
 import { CHEST_DEFINITIONS } from '../../config/chests';
-import { Rarity } from '../../types/loot';
+import { ItemRarity } from '../../types/item';
 
 export function createChestPlaceholderTextures(scene: Phaser.Scene): void {
-  const definition = CHEST_DEFINITIONS[Rarity.Common];
+  const definition = CHEST_DEFINITIONS[ItemRarity.Common];
 
   if (!definition) {
     throw new Error('Common chest definition is missing.');

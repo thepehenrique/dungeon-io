@@ -1,12 +1,12 @@
 import { COMMON_CHEST_LOOT_TABLE } from '../config/loot';
 import {
   LootDelivery,
-  Rarity,
   type ChestLootResult,
   type LootContext,
   type LootDrop,
   type LootTableEntry,
 } from '../types/loot';
+import { ItemRarity } from '../types/item';
 
 export class LootSystem {
   private readonly random: () => number;
@@ -15,7 +15,7 @@ export class LootSystem {
     this.random = random;
   }
 
-  collectChestLoot(rarity: Rarity, context: LootContext): ChestLootResult {
+  collectChestLoot(rarity: ItemRarity, context: LootContext): ChestLootResult {
     const eligibleTable = this.getChestLootTable(rarity).filter(
       (entry) => !entry.loot.canDrop || entry.loot.canDrop(context),
     );
@@ -73,13 +73,14 @@ export class LootSystem {
     };
   }
 
-  private getChestLootTable(rarity: Rarity): readonly LootTableEntry[] {
+  private getChestLootTable(rarity: ItemRarity): readonly LootTableEntry[] {
     switch (rarity) {
-      case Rarity.Common:
+      case ItemRarity.Common:
         return COMMON_CHEST_LOOT_TABLE;
-      case Rarity.Rare:
-      case Rarity.Epic:
-      case Rarity.Legendary:
+      case ItemRarity.Uncommon:
+      case ItemRarity.Rare:
+      case ItemRarity.Epic:
+      case ItemRarity.Legendary:
         throw new Error(`Loot table not implemented for rarity: ${rarity}`);
     }
   }

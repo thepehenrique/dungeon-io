@@ -7,7 +7,7 @@ import {
 } from '../config/dungeonAssets';
 import type { ChestSpawnDefinition } from '../types/chest';
 import { EnemyType, type EnemySpawnDefinition } from '../types/enemy';
-import { Rarity } from '../types/loot';
+import { ItemRarity } from '../types/item';
 
 interface TiledProperty {
   readonly name: string;
@@ -176,8 +176,8 @@ export class TilemapDungeon {
     return Object.values(EnemyType).includes(value as EnemyType);
   }
 
-  private isRarity(value: string): value is Rarity {
-    return Object.values(Rarity).includes(value as Rarity);
+  private isRarity(value: string): value is ItemRarity {
+    return Object.values(ItemRarity).includes(value as ItemRarity);
   }
 
   private requireMap(): Phaser.Tilemaps.Tilemap {

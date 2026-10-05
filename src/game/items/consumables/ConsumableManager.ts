@@ -42,7 +42,7 @@ export class ConsumableManager {
           return;
         }
 
-        const result = potionSlot.add(pickupObject.definition.type);
+        const result = potionSlot.add(pickupObject.definition.consumableType);
 
         if (!result.stored) {
           if (!pickupObject.markUnavailableFeedbackShown()) {

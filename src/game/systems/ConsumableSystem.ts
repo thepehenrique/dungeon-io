@@ -9,7 +9,7 @@ import {
 export class ConsumableSystem {
   use(definition: ConsumableDefinition, player: Player): ConsumableUseResult {
     switch (definition.effect.type) {
-      case ConsumableEffectType.RestoreHealth: {
+      case ConsumableEffectType.Heal: {
         const appliedAmount = player.heal(definition.effect.amount);
 
         if (appliedAmount <= 0) {
@@ -23,7 +23,7 @@ export class ConsumableSystem {
         return {
           consumed: true,
           appliedAmount,
-          message: `${definition.label} +${formatNumber(appliedAmount)} HP`,
+          message: `${definition.name} +${formatNumber(appliedAmount)} HP`,
         };
       }
     }

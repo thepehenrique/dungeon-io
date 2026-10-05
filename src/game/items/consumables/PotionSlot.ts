@@ -59,7 +59,7 @@ export class PotionSlot {
 
     return {
       stored: true,
-      message: `${definition.label} coletada`,
+      message: `${definition.name} coletada`,
     };
   }
 

@@ -1,11 +1,11 @@
 import type { ChestDefinition, ChestSpawnDefinition } from '../types/chest';
-import { Rarity } from '../types/loot';
+import { ItemRarity } from '../types/item';
 
 export const CHEST_DEFINITIONS: Readonly<
-  Partial<Record<Rarity, ChestDefinition>>
+  Partial<Record<ItemRarity, ChestDefinition>>
 > = {
-  [Rarity.Common]: {
-    rarity: Rarity.Common,
+  [ItemRarity.Common]: {
+    rarity: ItemRarity.Common,
     label: 'Baú comum',
     closedTextureKey: 'chest-common-closed',
     openTextureKey: 'chest-common-open',
@@ -15,5 +15,5 @@ export const CHEST_DEFINITIONS: Readonly<
 };
 
 export const INITIAL_CHEST_SPAWNS: readonly ChestSpawnDefinition[] = [
-  { rarity: Rarity.Common, x: 1180, y: 400 },
+  { rarity: ItemRarity.Common, x: 1180, y: 400 },
 ] as const;

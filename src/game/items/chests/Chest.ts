@@ -2,15 +2,15 @@ import Phaser from 'phaser';
 
 import { CHEST_DEFINITIONS } from '../../config/chests';
 import { ChestState } from '../../types/chest';
-import type { Rarity } from '../../types/loot';
+import type { ItemRarity } from '../../types/item';
 
 export class Chest extends Phaser.Physics.Arcade.Sprite {
-  readonly rarity: Rarity;
+  readonly rarity: ItemRarity;
 
   private chestState = ChestState.Closed;
   private readonly openTextureKey: string;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, rarity: Rarity) {
+  constructor(scene: Phaser.Scene, x: number, y: number, rarity: ItemRarity) {
     const definition = CHEST_DEFINITIONS[rarity];
 
     if (!definition) {

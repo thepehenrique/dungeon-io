@@ -1,28 +1,11 @@
-export enum ConsumableType {
-  MinorHealthPotion = 'MINOR_HEALTH_POTION',
-  MajorHealthPotion = 'MAJOR_HEALTH_POTION',
-}
+import type { ConsumableType } from './item';
 
-export enum ConsumableEffectType {
-  RestoreHealth = 'RESTORE_HEALTH',
-}
-
-export interface RestoreHealthEffect {
-  readonly type: ConsumableEffectType.RestoreHealth;
-  readonly amount: number;
-}
-
-export type ConsumableEffect = RestoreHealthEffect;
-
-export interface ConsumableDefinition {
-  readonly id: string;
-  readonly type: ConsumableType;
-  readonly label: string;
-  readonly color: string;
-  readonly textureKey: string;
-  readonly pickupRadius: number;
-  readonly effect: ConsumableEffect;
-}
+export { ConsumableEffectType, ConsumableType } from './item';
+export type {
+  ConsumableDefinition,
+  ConsumableEffect,
+  HealEffect,
+} from './item';
 
 export interface ConsumableUseResult {
   readonly consumed: boolean;

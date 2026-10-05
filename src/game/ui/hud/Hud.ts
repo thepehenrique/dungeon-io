@@ -219,7 +219,7 @@ export class Hud {
       this.quickSlots[0].update(
         potionType === null
           ? 'Vazio'
-          : `${CONSUMABLE_DEFINITIONS[potionType].label} x${this.potionSlot.quantity}`,
+          : `${CONSUMABLE_DEFINITIONS[potionType].name} x${this.potionSlot.quantity}`,
       );
     }
 

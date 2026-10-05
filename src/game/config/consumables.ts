@@ -1,33 +1,41 @@
 import {
   ConsumableEffectType,
   ConsumableType,
+  ItemRarity,
+  ItemType,
   type ConsumableDefinition,
-} from '../types/consumable';
+} from '../types/item';
 
 export const CONSUMABLE_DEFINITIONS: Readonly<
   Record<ConsumableType, ConsumableDefinition>
 > = {
   [ConsumableType.MinorHealthPotion]: {
-    id: 'minor-health-potion',
-    type: ConsumableType.MinorHealthPotion,
-    label: 'Poção de Cura Menor',
+    id: 'minor_health_potion',
+    name: 'Poção de Cura Menor',
+    type: ItemType.Consumable,
+    rarity: ItemRarity.Common,
+    consumableType: ConsumableType.MinorHealthPotion,
     color: '#70dc91',
     textureKey: 'consumable-minor-health-potion',
     pickupRadius: 10,
+    stackLimit: 5,
     effect: {
-      type: ConsumableEffectType.RestoreHealth,
+      type: ConsumableEffectType.Heal,
       amount: 25,
     },
   },
   [ConsumableType.MajorHealthPotion]: {
-    id: 'major-health-potion',
-    type: ConsumableType.MajorHealthPotion,
-    label: 'Poção de Cura Maior',
+    id: 'major_health_potion',
+    name: 'Poção de Cura Maior',
+    type: ItemType.Consumable,
+    rarity: ItemRarity.Uncommon,
+    consumableType: ConsumableType.MajorHealthPotion,
     color: '#ef657a',
     textureKey: 'consumable-major-health-potion',
     pickupRadius: 14,
+    stackLimit: 3,
     effect: {
-      type: ConsumableEffectType.RestoreHealth,
+      type: ConsumableEffectType.Heal,
       amount: 60,
     },
   },

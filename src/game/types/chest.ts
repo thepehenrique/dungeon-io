@@ -1,4 +1,4 @@
-import type { Rarity } from './loot';
+import type { ItemRarity } from './item';
 
 export enum ChestState {
   Closed = 'CLOSED',
@@ -6,7 +6,7 @@ export enum ChestState {
 }
 
 export interface ChestDefinition {
-  readonly rarity: Rarity;
+  readonly rarity: ItemRarity;
   readonly label: string;
   readonly closedTextureKey: string;
   readonly openTextureKey: string;
@@ -15,7 +15,7 @@ export interface ChestDefinition {
 }
 
 export interface ChestSpawnDefinition {
-  readonly rarity: Rarity;
+  readonly rarity: ItemRarity;
   readonly x: number;
   readonly y: number;
 }

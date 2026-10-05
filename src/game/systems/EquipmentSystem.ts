@@ -1,15 +1,15 @@
 import type { Player } from '../player/Player';
 import {
+  ItemStat,
   ModifierMode,
   type EquipmentDefinition,
-  type EquipmentModifier,
   type EquipmentResult,
   type EquipmentSlot,
-  type EquipmentStat,
+  type ItemModifier,
 } from '../types/equipment';
 
 interface AppliedModifier {
-  readonly stat: EquipmentStat;
+  readonly stat: ItemStat;
   readonly delta: number;
 }
 
@@ -33,7 +33,7 @@ export class EquipmentSystem {
   equip(equipment: EquipmentDefinition): EquipmentResult {
     if (!this.canEquip(equipment)) {
       throw new Error(
-        `${this.player.playerClass} cannot equip ${equipment.label}.`,
+        `${this.player.playerClass} cannot equip ${equipment.name}.`,
       );
     }
 
@@ -65,7 +65,7 @@ export class EquipmentSystem {
     return [...this.equippedItems.values()].map((item) => item.definition);
   }
 
-  private applyModifier(modifier: EquipmentModifier): AppliedModifier {
+  private applyModifier(modifier: ItemModifier): AppliedModifier {
     const currentValue = this.player.stats[modifier.stat];
     const rawDelta =
       modifier.mode === ModifierMode.Flat
@@ -75,7 +75,7 @@ export class EquipmentSystem {
 
     this.player.stats[modifier.stat] = roundStat(currentValue + delta);
 
-    if (modifier.stat === 'maxHealth' && delta > 0) {
+    if (modifier.stat === ItemStat.MaxHealth && delta > 0) {
       this.player.stats.health = Math.min(
         this.player.stats.maxHealth,
         this.player.stats.health + delta,

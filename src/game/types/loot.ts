@@ -1,14 +1,8 @@
 import type { EquipmentDefinition, EquipmentResult } from './equipment';
 import type { ConsumableType } from './consumable';
+import type { ItemRarity } from './item';
 import type { PlayerClass } from './player';
 import type { RunState } from './run';
-
-export enum Rarity {
-  Common = 'COMMON',
-  Rare = 'RARE',
-  Epic = 'EPIC',
-  Legendary = 'LEGENDARY',
-}
 
 export enum LootType {
   Gold = 'GOLD',
@@ -31,7 +25,7 @@ export interface LootContext {
 interface BaseLootDefinition {
   readonly id: string;
   readonly type: LootType;
-  readonly rarity: Rarity;
+  readonly rarity: ItemRarity;
   readonly label: string;
   readonly color: string;
   readonly canDrop?: (context: LootContext) => boolean;
