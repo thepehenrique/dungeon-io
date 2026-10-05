@@ -13,25 +13,24 @@ export class HudBar {
     label: string,
     color: number,
   ) {
-    const labelText = scene.add.text(HUD_LAYOUT.padding, y, label, {
+    const labelText = scene.add.text(HUD_LAYOUT.padding, y - 8, label, {
       fontFamily: 'Arial, sans-serif',
       fontSize: '12px',
       fontStyle: 'bold',
       color: HUD_COLORS.secondaryText,
     });
     this.valueText = scene.add
-      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, y, '', {
+      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, y - 8, '', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '12px',
         color: HUD_COLORS.primaryText,
       })
       .setOrigin(1, 0);
 
-    const barY = y + 25;
     const background = scene.add
       .rectangle(
-        HUD_LAYOUT.padding,
-        barY,
+        HUD_LAYOUT.barX,
+        y,
         HUD_LAYOUT.barWidth,
         HUD_LAYOUT.barHeight,
         HUD_COLORS.barBackground,
@@ -40,8 +39,8 @@ export class HudBar {
       .setStrokeStyle(1, HUD_COLORS.panelBorder);
     this.fill = scene.add
       .rectangle(
-        HUD_LAYOUT.padding,
-        barY,
+        HUD_LAYOUT.barX,
+        y,
         HUD_LAYOUT.barWidth,
         HUD_LAYOUT.barHeight - 4,
         color,

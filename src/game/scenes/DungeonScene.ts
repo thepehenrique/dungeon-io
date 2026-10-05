@@ -242,7 +242,6 @@ export class DungeonScene extends Phaser.Scene {
       player,
       run,
       PLAYER_CLASSES[run.playerClass],
-      equipmentSystem,
       potionSlot,
       this.playerController.classAbility,
     );

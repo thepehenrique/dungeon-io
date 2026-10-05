@@ -83,7 +83,7 @@ export class ClassAbilityController {
         }
 
         return this.cooldownRemainingMs > 0
-          ? `SPACE  DASH ${formatCooldown(this.cooldownRemainingMs)}`
+          ? `[SPACE] DASH ${formatCooldown(this.cooldownRemainingMs)}`
           : CLASS_ABILITY_PRESENTATION.archerReady;
       case PlayerClass.Mage:
         if (this.activeRemainingMs > 0) {
@@ -91,7 +91,7 @@ export class ClassAbilityController {
         }
 
         return this.cooldownRemainingMs > 0
-          ? `SPACE  PROTEÇÃO ${formatCooldown(this.cooldownRemainingMs)}`
+          ? `[SPACE] PROTECTION ${formatCooldown(this.cooldownRemainingMs)}`
           : CLASS_ABILITY_PRESENTATION.mageReady;
     }
   }
