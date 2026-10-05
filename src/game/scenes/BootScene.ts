@@ -6,6 +6,10 @@ import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
 import { createChestPlaceholderTextures } from '../items/chests/chestTextures';
 import { createPlayerPlaceholderTextures } from '../player/playerTextures';
+import {
+  createWarriorAnimations,
+  preloadWarriorSprites,
+} from '../player/warriorAnimations';
 import { createProjectilePlaceholderTextures } from '../projectiles/projectileTextures';
 import { GameSession } from '../state/GameSession';
 
@@ -16,6 +20,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
+    preloadWarriorSprites(this);
 
     for (const tileset of DUNGEON_TILESETS) {
       this.load.image(tileset.key, `assets/dungeon/${tileset.file}`);
@@ -27,6 +32,7 @@ export class BootScene extends Phaser.Scene {
     createDungeonPlaceholderTextures(this);
     createEnemyPlaceholderTextures(this);
     createPlayerPlaceholderTextures(this);
+    createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);
     this.registry.set(REGISTRY_KEYS.GAME_SESSION, new GameSession());
     this.scene.start(SCENE_KEYS.MENU);

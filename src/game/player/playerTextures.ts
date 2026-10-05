@@ -1,11 +1,16 @@
 import Phaser from 'phaser';
 
 import { PLAYER_CLASS_LIST } from '../config/playerClasses';
-import type { PlayerClass } from '../types/player';
+import { PlayerClass } from '../types/player';
+import { WARRIOR_TEXTURE_KEYS } from './warriorAnimations';
 
 const PLAYER_TEXTURE_SIZE = 48;
 
 export function getPlayerTextureKey(playerClass: PlayerClass): string {
+  if (playerClass === PlayerClass.Warrior) {
+    return WARRIOR_TEXTURE_KEYS.walk;
+  }
+
   return `player-placeholder-${playerClass.toLowerCase()}`;
 }
 
