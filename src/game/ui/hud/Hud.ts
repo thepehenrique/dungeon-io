@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
-import { GAME_HEIGHT } from '../../constants/game';
 import { getItemDefinition } from '../../items/ItemRegistry';
 import type { ClassAbilityController } from '../../player/ClassAbilityController';
 import type { Player } from '../../player/Player';
@@ -13,7 +12,9 @@ import { HudBar } from './HudBar';
 import { HudQuickSlot } from './HudQuickSlot';
 
 export class Hud {
-  private readonly container: Phaser.GameObjects.Container;
+  private readonly topContainer: Phaser.GameObjects.Container;
+  private readonly actionContainer: Phaser.GameObjects.Container;
+  private readonly scaleManager: Phaser.Scale.ScaleManager;
   private readonly player: Player;
   private readonly run: RunState;
   private readonly inventory: InventorySystem;
@@ -47,8 +48,13 @@ export class Hud {
     this.run = run;
     this.inventory = inventory;
     this.classAbility = classAbility;
-    this.container = scene.add
-      .container(HUD_LAYOUT.x, HUD_LAYOUT.y)
+    this.scaleManager = scene.scale;
+    this.topContainer = scene.add
+      .container(0, 0)
+      .setScrollFactor(0)
+      .setDepth(500);
+    this.actionContainer = scene.add
+      .container(0, 0)
       .setScrollFactor(0)
       .setDepth(500);
 
@@ -59,20 +65,21 @@ export class Hud {
     const accent = scene.add
       .rectangle(0, 0, 5, HUD_LAYOUT.height, playerClass.color)
       .setOrigin(0);
-    const nameText = scene.add.text(HUD_LAYOUT.padding, 12, player.playerName, {
+    const nameText = scene.add.text(HUD_LAYOUT.padding, 11, player.playerName, {
       fontFamily: 'Arial, sans-serif',
       fontSize: '18px',
       fontStyle: 'bold',
       color: HUD_COLORS.primaryText,
+      fixedWidth: 190,
     });
-    const classText = scene.add.text(HUD_LAYOUT.padding, 36, playerClass.label, {
+    const classText = scene.add.text(218, 15, playerClass.label, {
       fontFamily: 'Arial, sans-serif',
       fontSize: '12px',
       fontStyle: 'bold',
       color: playerClass.cssColor,
     });
     this.levelText = scene.add
-      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, 14, '', {
+      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, 13, '', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         fontStyle: 'bold',
@@ -93,7 +100,7 @@ export class Hud {
       })
       .setOrigin(1, 0);
 
-    this.container.add([
+    this.topContainer.add([
       panel,
       accent,
       nameText,
@@ -104,29 +111,24 @@ export class Hud {
     ]);
     this.healthBar = new HudBar(
       scene,
-      this.container,
+      this.topContainer,
       HUD_LAYOUT.healthY,
       'HP',
       HUD_COLORS.health,
     );
     this.experienceBar = new HudBar(
       scene,
-      this.container,
+      this.topContainer,
       HUD_LAYOUT.experienceY,
       'XP',
       HUD_COLORS.experience,
     );
 
-    const quickSlotsY =
-      GAME_HEIGHT -
-      HUD_LAYOUT.y -
-      HUD_LAYOUT.quickSlots.bottom -
-      HUD_LAYOUT.quickSlots.height;
     this.quickSlots = [1, 2, 3].map((key, index) => {
       const x =
         index * (HUD_LAYOUT.quickSlots.width + HUD_LAYOUT.quickSlots.gap);
 
-      return new HudQuickSlot(scene, this.container, x, quickSlotsY, key);
+      return new HudQuickSlot(scene, this.actionContainer, x, 0, key);
     });
     const abilityX =
       HUD_LAYOUT.quickSlots.width * 3 +
@@ -135,7 +137,7 @@ export class Hud {
     const abilityBackground = scene.add
       .rectangle(
         abilityX,
-        quickSlotsY,
+        0,
         HUD_LAYOUT.ability.width,
         HUD_LAYOUT.ability.height,
         HUD_COLORS.slot,
@@ -143,7 +145,7 @@ export class Hud {
       )
       .setOrigin(0)
       .setStrokeStyle(1, playerClass.color);
-    const abilityLabel = scene.add.text(abilityX + 11, quickSlotsY + 8, 'HABILIDADE', {
+    const abilityLabel = scene.add.text(abilityX + 11, 8, 'HABILIDADE', {
       fontFamily: 'Arial, sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
@@ -152,7 +154,7 @@ export class Hud {
     this.classAbilityText = scene.add
       .text(
         abilityX + 11,
-        quickSlotsY + 31,
+        31,
         '',
         {
           fontFamily: 'Arial, sans-serif',
@@ -162,12 +164,18 @@ export class Hud {
           fixedWidth: HUD_LAYOUT.ability.width - 22,
         },
       );
-    this.container.add([
+    this.actionContainer.add([
       abilityBackground,
       abilityLabel,
       this.classAbilityText,
     ]);
 
+    this.scaleManager.on(
+      Phaser.Scale.Events.RESIZE,
+      this.handleResize,
+      this,
+    );
+    this.reposition();
     this.update();
   }
 
@@ -238,6 +246,47 @@ export class Hud {
   }
 
   destroy(): void {
-    this.container.destroy();
+    this.scaleManager.off(
+      Phaser.Scale.Events.RESIZE,
+      this.handleResize,
+      this,
+    );
+    this.topContainer.destroy();
+    this.actionContainer.destroy();
+  }
+
+  private handleResize(): void {
+    this.reposition();
+  }
+
+  private reposition(): void {
+    const viewportWidth = this.scaleManager.gameSize.width;
+    const viewportHeight = this.scaleManager.gameSize.height;
+    const availableWidth = Math.max(
+      1,
+      viewportWidth - HUD_LAYOUT.sideMargin * 2,
+    );
+    const topScale = Math.min(1, availableWidth / HUD_LAYOUT.width);
+    const actionWidth =
+      HUD_LAYOUT.quickSlots.width * 3 +
+      HUD_LAYOUT.quickSlots.gap * 2 +
+      HUD_LAYOUT.ability.gap +
+      HUD_LAYOUT.ability.width;
+    const actionScale = Math.min(1, availableWidth / actionWidth);
+
+    this.topContainer
+      .setScale(topScale)
+      .setPosition(
+        (viewportWidth - HUD_LAYOUT.width * topScale) / 2,
+        HUD_LAYOUT.topMargin,
+      );
+    this.actionContainer
+      .setScale(actionScale)
+      .setPosition(
+        (viewportWidth - actionWidth * actionScale) / 2,
+        viewportHeight -
+          HUD_LAYOUT.quickSlots.bottom -
+          HUD_LAYOUT.quickSlots.height * actionScale,
+      );
   }
 }
