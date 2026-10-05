@@ -5,6 +5,10 @@ import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
 import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
 import { createChestPlaceholderTextures } from '../items/chests/chestTextures';
+import {
+  createArcherAnimations,
+  preloadArcherSprites,
+} from '../player/archerAnimations';
 import { createPlayerPlaceholderTextures } from '../player/playerTextures';
 import {
   createWarriorAnimations,
@@ -20,6 +24,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
+    preloadArcherSprites(this);
     preloadWarriorSprites(this);
 
     for (const tileset of DUNGEON_TILESETS) {
@@ -32,6 +37,7 @@ export class BootScene extends Phaser.Scene {
     createDungeonPlaceholderTextures(this);
     createEnemyPlaceholderTextures(this);
     createPlayerPlaceholderTextures(this);
+    createArcherAnimations(this);
     createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);
     this.registry.set(REGISTRY_KEYS.GAME_SESSION, new GameSession());

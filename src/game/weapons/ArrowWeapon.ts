@@ -14,6 +14,8 @@ export class ArrowWeapon extends PrimaryWeapon {
   }
 
   protected performAttack(direction: Phaser.Math.Vector2): void {
+    this.owner.playBowAttack(direction);
+
     this.projectiles.add(
       new ArrowProjectile(this.scene, {
         ownerId: this.owner.playerId,

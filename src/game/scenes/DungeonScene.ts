@@ -36,6 +36,7 @@ export class DungeonScene extends Phaser.Scene {
   private enemyManager: EnemyManager | null = null;
   private player: Player | null = null;
   private hud: Hud | null = null;
+  private waveCountdownText: Phaser.GameObjects.Text | null = null;
   private progressionSystem: ProgressionSystem | null = null;
   private readonly upgradeSystem = new UpgradeSystem();
   private readonly lootSystem = new LootSystem();
@@ -123,6 +124,21 @@ export class DungeonScene extends Phaser.Scene {
       },
       dungeon.getEnemySpawns(),
     );
+    this.waveCountdownText = this.add
+      .text(GAME_WIDTH / 2, 42, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '22px',
+        fontStyle: 'bold',
+        color: '#f4d17a',
+        stroke: '#080c12',
+        strokeThickness: 5,
+        backgroundColor: '#080c12cc',
+        padding: { x: 14, y: 8 },
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(500)
+      .setVisible(false);
     this.projectileManager = new ProjectileManager(this, dungeon.walls);
     this.projectileManager.registerEnemyTargets(
       this.enemyManager.group,
@@ -162,6 +178,7 @@ export class DungeonScene extends Phaser.Scene {
       this.enemyManager = null;
       this.player = null;
       this.hud = null;
+      this.waveCountdownText = null;
       this.progressionSystem = null;
       this.levelUpView = null;
       this.pendingUpgradeLevels.length = 0;
@@ -170,7 +187,7 @@ export class DungeonScene extends Phaser.Scene {
     });
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     this.hud?.update();
 
     if (this.gameOverPending) {
@@ -184,11 +201,29 @@ export class DungeonScene extends Phaser.Scene {
 
     this.playerController?.update();
     this.projectileManager?.update();
-    this.enemyManager?.update();
+    this.enemyManager?.update(delta);
+    this.updateWaveCountdown();
 
     if (this.gameOverPending) {
       this.scene.start(SCENE_KEYS.GAME_OVER);
     }
+  }
+
+  private updateWaveCountdown(): void {
+    if (!this.waveCountdownText || !this.enemyManager) {
+      return;
+    }
+
+    const seconds = this.enemyManager.secondsUntilNextWave;
+
+    if (seconds === null) {
+      this.waveCountdownText.setVisible(false);
+      return;
+    }
+
+    this.waveCountdownText
+      .setText(`Horda ${this.enemyManager.currentWave + 1} em ${seconds}s`)
+      .setVisible(true);
   }
 
   private showExperienceGain(x: number, y: number, amount: number): void {

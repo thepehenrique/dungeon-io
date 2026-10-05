@@ -63,3 +63,7 @@ export const INITIAL_ENEMY_SPAWNS: readonly EnemySpawnDefinition[] = [
   { type: EnemyType.SkeletonWarrior, x: 410, y: 680, level: 1 },
   { type: EnemyType.Zombie, x: 680, y: 650, level: 1 },
 ] as const;
+
+export const ENEMY_WAVE_CONFIG = {
+  intermissionMs: 15_000,
+} as const;

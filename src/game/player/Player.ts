@@ -6,6 +6,15 @@ import { PlayerClass, type PlayerStats } from '../types/player';
 import { createPlayerStats } from './createPlayerStats';
 import { getPlayerTextureKey } from './playerTextures';
 import {
+  ARCHER_SPRITE,
+  ARCHER_TEXTURE_KEYS,
+  getArcherAttackAnimationKey,
+  getArcherFacing,
+  getArcherIdleFrame,
+  getArcherWalkAnimationKey,
+  type ArcherFacing,
+} from './archerAnimations';
+import {
   getWarriorAttackAnimationKey,
   getWarriorFacing,
   getWarriorIdleFrame,
@@ -31,6 +40,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private warriorFacing: WarriorFacing = 'down';
   private warriorMoving = false;
   private warriorAttacking = false;
+  private archerFacing: ArcherFacing = 'down';
+  private archerMoving = false;
+  private archerAttacking = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -56,6 +68,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         WARRIOR_SPRITE.bodyOffsetY,
       );
       this.showWarriorIdleFrame();
+    } else if (this.isArcher) {
+      this.setScale(ARCHER_SPRITE.scale);
+      this.setCircle(
+        ARCHER_SPRITE.bodyRadius,
+        ARCHER_SPRITE.bodyOffsetX,
+        ARCHER_SPRITE.bodyOffsetY,
+      );
+      this.showArcherIdleFrame();
     } else {
       this.setCircle(PLAYER_MOVEMENT.bodyRadius, 6, 6);
     }
@@ -70,17 +90,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    this.warriorMoving = direction.lengthSq() > 0;
+    const isMoving = direction.lengthSq() > 0;
+    this.warriorMoving = isMoving;
+    this.archerMoving = isMoving;
 
     if (direction.lengthSq() === 0) {
       this.setVelocity(0, 0);
       this.updateWarriorMovementAnimation();
+      this.updateArcherMovementAnimation();
       return;
     }
 
     direction.normalize().scale(this.stats.movementSpeed);
     this.setVelocity(direction.x, direction.y);
     this.updateWarriorMovementAnimation();
+    this.updateArcherMovementAnimation();
   }
 
   face(targetX: number, targetY: number): void {
@@ -90,6 +114,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       if (nextFacing !== this.warriorFacing) {
         this.warriorFacing = nextFacing;
         this.updateWarriorMovementAnimation();
+      }
+
+      this.setRotation(0);
+      return;
+    }
+
+    if (this.isArcher) {
+      const nextFacing = getArcherFacing(targetX - this.x, targetY - this.y);
+
+      if (nextFacing !== this.archerFacing) {
+        this.archerFacing = nextFacing;
+        this.updateArcherMovementAnimation();
       }
 
       this.setRotation(0);
@@ -116,6 +152,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.once(
       Phaser.Animations.Events.ANIMATION_COMPLETE,
       this.finishWarriorSwordAttack,
+      this,
+    );
+    this.play(attackKey);
+  }
+
+  playBowAttack(direction: Phaser.Math.Vector2): void {
+    if (!this.isArcher || this.dead) {
+      return;
+    }
+
+    this.archerFacing = getArcherFacing(direction.x, direction.y);
+    this.archerAttacking = true;
+
+    const attackKey = getArcherAttackAnimationKey(this.archerFacing);
+    this.off(
+      Phaser.Animations.Events.ANIMATION_COMPLETE,
+      this.finishArcherBowAttack,
+      this,
+    );
+    this.once(
+      Phaser.Animations.Events.ANIMATION_COMPLETE,
+      this.finishArcherBowAttack,
       this,
     );
     this.play(attackKey);
@@ -150,6 +208,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.playerClass === PlayerClass.Warrior;
   }
 
+  private get isArcher(): boolean {
+    return this.playerClass === PlayerClass.Archer;
+  }
+
   private updateWarriorMovementAnimation(): void {
     if (!this.isWarrior || this.warriorAttacking || this.dead) {
       return;
@@ -171,8 +233,34 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     );
   }
 
+  private updateArcherMovementAnimation(): void {
+    if (!this.isArcher || this.archerAttacking || this.dead) {
+      return;
+    }
+
+    if (this.archerMoving) {
+      this.play(getArcherWalkAnimationKey(this.archerFacing), true);
+      return;
+    }
+
+    this.showArcherIdleFrame();
+  }
+
+  private showArcherIdleFrame(): void {
+    this.anims.stop();
+    this.setTexture(
+      ARCHER_TEXTURE_KEYS.walk,
+      getArcherIdleFrame(this.archerFacing),
+    );
+  }
+
   private finishWarriorSwordAttack(): void {
     this.warriorAttacking = false;
     this.updateWarriorMovementAnimation();
+  }
+
+  private finishArcherBowAttack(): void {
+    this.archerAttacking = false;
+    this.updateArcherMovementAnimation();
   }
 }

@@ -1,5 +1,5 @@
-import { PLAYER_CLASS_LIST } from '../../game/config/playerClasses';
-import { PlayerClass } from '../../game/types/player';
+import { PLAYER_CLASS_LIST } from "../../game/config/playerClasses";
+import { PlayerClass } from "../../game/types/player";
 
 export interface MenuSubmission {
   readonly playerName: string;
@@ -11,7 +11,10 @@ export class MenuView {
   private readonly element: HTMLElement;
   private readonly onSubmit: (submission: MenuSubmission) => void;
 
-  constructor(root: HTMLElement, onSubmit: (submission: MenuSubmission) => void) {
+  constructor(
+    root: HTMLElement,
+    onSubmit: (submission: MenuSubmission) => void
+  ) {
     this.root = root;
     this.onSubmit = onSubmit;
     this.element = this.build();
@@ -23,8 +26,8 @@ export class MenuView {
   }
 
   private build(): HTMLElement {
-    const wrapper = document.createElement('section');
-    wrapper.className = 'menu-screen';
+    const wrapper = document.createElement("section");
+    wrapper.className = "menu-screen";
 
     const classOptions = PLAYER_CLASS_LIST.map(
       ({ id, label, fantasy, cssColor }) => `
@@ -35,8 +38,8 @@ export class MenuView {
             <small>${fantasy}</small>
           </span>
         </label>
-      `,
-    ).join('');
+      `
+    ).join("");
 
     wrapper.innerHTML = `
       <div class="menu-panel">
@@ -45,7 +48,7 @@ export class MenuView {
         <p class="menu-intro">Escolha quem atravessará os portões da masmorra.</p>
 
         <form class="menu-form" novalidate>
-          <label class="field-label" for="player-name">Nome do jogador</label>
+          <label class="field-label" for="player-name">Nome do Aventureiro</label>
           <input
             id="player-name"
             class="name-input"
@@ -67,27 +70,27 @@ export class MenuView {
       </div>
     `;
 
-    const form = wrapper.querySelector<HTMLFormElement>('form');
-    const nameInput = wrapper.querySelector<HTMLInputElement>('#player-name');
-    const errorElement = wrapper.querySelector<HTMLElement>('.form-error');
+    const form = wrapper.querySelector<HTMLFormElement>("form");
+    const nameInput = wrapper.querySelector<HTMLInputElement>("#player-name");
+    const errorElement = wrapper.querySelector<HTMLElement>(".form-error");
 
     if (!form || !nameInput || !errorElement) {
-      throw new Error('Menu elements could not be created.');
+      throw new Error("Menu elements could not be created.");
     }
 
-    form.addEventListener('submit', (event) => {
+    form.addEventListener("submit", (event) => {
       event.preventDefault();
       const selectedClass = form.querySelector<HTMLInputElement>(
-        'input[name="player-class"]:checked',
+        'input[name="player-class"]:checked'
       );
       const playerName = nameInput.value.trim();
 
       if (!playerName || !selectedClass) {
-        errorElement.textContent = 'Informe seu nome e selecione uma classe.';
+        errorElement.textContent = "Informe seu nome e selecione uma classe.";
         return;
       }
 
-      errorElement.textContent = '';
+      errorElement.textContent = "";
       this.onSubmit({
         playerName,
         playerClass: selectedClass.value as PlayerClass,
