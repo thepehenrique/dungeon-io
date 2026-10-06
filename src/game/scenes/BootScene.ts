@@ -4,6 +4,10 @@ import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
 import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
 import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
+import {
+  createGoblinAnimations,
+  preloadGoblinSprites,
+} from '../enemies/goblinAnimations';
 import { createChestPlaceholderTextures } from '../items/chests/chestTextures';
 import { createConsumablePlaceholderTextures } from '../items/consumables/consumableTextures';
 import { createWorldItemPlaceholderTextures } from '../items/world/worldItemTextures';
@@ -28,6 +32,7 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
+    preloadGoblinSprites(this);
 
     for (const tileset of DUNGEON_TILESETS) {
       this.load.image(tileset.key, `assets/dungeon/${tileset.file}`);
@@ -41,6 +46,7 @@ export class BootScene extends Phaser.Scene {
     createDungeonPlaceholderTextures(this);
     createEnemyPlaceholderTextures(this);
     createPlayerPlaceholderTextures(this);
+    createGoblinAnimations(this);
     createArcherAnimations(this);
     createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);

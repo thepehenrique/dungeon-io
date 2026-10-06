@@ -22,6 +22,7 @@ import {
 } from './archerAnimations';
 import {
   getWarriorAttackAnimationKey,
+  getWarriorBlockAnimationKey,
   getWarriorFacing,
   getWarriorIdleFrame,
   getWarriorWalkAnimationKey,
@@ -164,7 +165,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   playSwordAttack(direction: Phaser.Math.Vector2): void {
-    if (!this.isWarrior || this.dead) {
+    if (!this.isWarrior || this.dead || this.blocking) {
       return;
     }
 
@@ -263,13 +264,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   setBlocking(active: boolean): void {
-    const nextState = this.isWarrior && !this.dead && active;
+    const nextState =
+      this.isWarrior && !this.dead && !this.warriorAttacking && active;
 
     if (nextState === this.blocking) {
       return;
     }
 
     this.blocking = nextState;
+    this.updateWarriorMovementAnimation();
     this.refreshAbilityPresentation();
   }
 
@@ -332,6 +335,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    if (this.blocking) {
+      this.play(getWarriorBlockAnimationKey(this.warriorFacing), true);
+      return;
+    }
+
     if (this.warriorMoving) {
       this.play(getWarriorWalkAnimationKey(this.warriorFacing), true);
       return;
@@ -385,8 +393,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.dead) {
       this.setTint(0x555555);
-    } else if (this.blocking) {
-      this.setTint(0x9fc8ff);
     }
 
     if (this.abilityAura) {

@@ -131,6 +131,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  protected onAttackStarted(_player: Player): void {}
+
   private chase(player: Player): void {
     const direction = new Phaser.Math.Vector2(player.x - this.x, player.y - this.y)
       .normalize()
@@ -149,6 +151,7 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.nextAttackAt = this.scene.time.now + 1000 / this.stats.attackSpeed;
+    this.onAttackStarted(player);
     onAttack(this, player);
   }
 
