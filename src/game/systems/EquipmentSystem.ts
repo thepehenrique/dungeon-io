@@ -1,4 +1,5 @@
 import type { Player } from '../player/Player';
+import { BASE_WEAPON_DEFINITIONS } from '../config/equipment';
 import {
   EquipmentSlot,
   ItemStat,
@@ -19,14 +20,16 @@ interface AppliedModifier {
 }
 
 interface EquippedItem {
-  readonly instance: ItemInstance;
+  readonly instance: ItemInstance | null;
   readonly definition: EquipmentDefinition;
+  readonly isBase: boolean;
   appliedModifiers: readonly AppliedModifier[];
 }
 
 export interface EquippedItemView {
-  readonly instance: ItemInstance;
+  readonly instance: ItemInstance | null;
   readonly definition: EquipmentDefinition;
+  readonly isBase: boolean;
 }
 
 export class EquipmentSystem {
@@ -36,7 +39,14 @@ export class EquipmentSystem {
   constructor(
     private readonly player: Player,
     private readonly inventory: InventorySystem,
-  ) {}
+  ) {
+    this.equippedItems.set(EquipmentSlot.Weapon, {
+      instance: null,
+      definition: BASE_WEAPON_DEFINITIONS[player.playerClass],
+      isBase: true,
+      appliedModifiers: [],
+    });
+  }
 
   get revision(): number {
     return this.changeRevision;
@@ -73,7 +83,12 @@ export class EquipmentSystem {
       return { success: false, message: 'Item não encontrado' };
     }
 
-    if (previous) {
+    if (previous && !previous.isBase) {
+      if (!previous.instance) {
+        this.inventory.restoreSlot(selected);
+        return { success: false, message: 'Equipamento anterior inválido' };
+      }
+
       this.removeModifiers(previous.appliedModifiers);
       const restored = this.inventory.restoreSlot({
         item: previous.instance,
@@ -94,6 +109,7 @@ export class EquipmentSystem {
     this.equippedItems.set(definition.slot, {
       instance: selected.item,
       definition,
+      isBase: false,
       appliedModifiers,
     });
     this.changeRevision += 1;
@@ -107,13 +123,29 @@ export class EquipmentSystem {
       return { success: false, message: 'Slot já está vazio' };
     }
 
+    if (equipped.isBase || !equipped.instance) {
+      return {
+        success: false,
+        message: 'A arma básica não pode ser desequipada',
+      };
+    }
+
     if (!this.inventory.hasFreeSlot()) {
       return { success: false, message: 'Inventário cheio' };
     }
 
     this.removeModifiers(equipped.appliedModifiers);
     this.inventory.restoreSlot({ item: equipped.instance, quantity: 1 });
-    this.equippedItems.delete(slot);
+    if (slot === EquipmentSlot.Weapon) {
+      this.equippedItems.set(EquipmentSlot.Weapon, {
+        instance: null,
+        definition: BASE_WEAPON_DEFINITIONS[this.player.playerClass],
+        isBase: true,
+        appliedModifiers: [],
+      });
+    } else {
+      this.equippedItems.delete(slot);
+    }
     this.changeRevision += 1;
     return { success: true, message: `${equipped.definition.name} desequipado` };
   }
@@ -122,7 +154,11 @@ export class EquipmentSystem {
     const equipped = this.equippedItems.get(slot);
 
     return equipped
-      ? { instance: equipped.instance, definition: equipped.definition }
+      ? {
+          instance: equipped.instance,
+          definition: equipped.definition,
+          isBase: equipped.isBase,
+        }
       : null;
   }
 
@@ -130,6 +166,7 @@ export class EquipmentSystem {
     return [...this.equippedItems.values()].map((item) => ({
       instance: item.instance,
       definition: item.definition,
+      isBase: item.isBase,
     }));
   }
 

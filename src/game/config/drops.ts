@@ -14,7 +14,6 @@ const ITEMS = {
   majorPotion: CONSUMABLE_DEFINITIONS[ConsumableType.MajorHealthPotion].id,
   rustySword: EQUIPMENT_DEFINITIONS.rustySword.id,
   ironSword: EQUIPMENT_DEFINITIONS.ironSword.id,
-  woodenShield: EQUIPMENT_DEFINITIONS.woodenShield.id,
   simpleBow: EQUIPMENT_DEFINITIONS.simpleBow.id,
   longBow: EQUIPMENT_DEFINITIONS.longBow.id,
   woodenStaff: EQUIPMENT_DEFINITIONS.woodenStaff.id,
@@ -40,7 +39,6 @@ export const DROP_TABLES: Readonly<Record<DropTableId, DropTable>> = {
     entries: [
       entry(ITEMS.minorPotion, 40),
       entry(ITEMS.rustySword, 22),
-      entry(ITEMS.woodenShield, 15),
       entry(ITEMS.simpleBow, 22),
       entry(ITEMS.woodenStaff, 22),
       entry(ITEMS.leatherArmor, 18),
@@ -56,7 +54,6 @@ export const DROP_TABLES: Readonly<Record<DropTableId, DropTable>> = {
     entries: [
       entry(ITEMS.minorPotion, 30),
       entry(ITEMS.rustySword, 28),
-      entry(ITEMS.woodenShield, 25),
       entry(ITEMS.simpleBow, 28),
       entry(ITEMS.woodenStaff, 28),
       entry(ITEMS.leatherArmor, 14),
@@ -83,7 +80,6 @@ export const DROP_TABLES: Readonly<Record<DropTableId, DropTable>> = {
       entry(ITEMS.minorPotion, 24),
       entry(ITEMS.majorPotion, 12),
       entry(ITEMS.rustySword, 20),
-      entry(ITEMS.woodenShield, 18),
       entry(ITEMS.simpleBow, 20),
       entry(ITEMS.woodenStaff, 20),
       entry(ITEMS.leatherArmor, 20),

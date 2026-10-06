@@ -24,7 +24,6 @@ export interface ItemDefinition {
 
 export enum EquipmentSlot {
   Weapon = 'WEAPON',
-  Secondary = 'SECONDARY',
   Armor = 'ARMOR',
 }
 
@@ -32,7 +31,6 @@ export enum EquipmentKind {
   Sword = 'SWORD',
   Bow = 'BOW',
   Staff = 'STAFF',
-  Shield = 'SHIELD',
   Armor = 'ARMOR',
 }
 

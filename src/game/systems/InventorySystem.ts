@@ -169,6 +169,23 @@ export class InventorySystem {
     return this.state.quickSlots[index] ?? null;
   }
 
+  clearQuickSlot(index: number): InventoryOperationResult {
+    if (index < 0 || index >= INVENTORY_CONFIG.quickSlotCount) {
+      return { success: false, message: 'Quick Slot inválido' };
+    }
+
+    if (this.state.quickSlots[index] === null) {
+      return { success: false, message: `Slot ${index + 1} já está vazio` };
+    }
+
+    this.state.quickSlots[index] = null;
+    this.markChanged();
+    return {
+      success: true,
+      message: `Item removido do slot ${index + 1}`,
+    };
+  }
+
   equipBackpack(
     instance: ItemInstance,
     definition: BackpackDefinition,

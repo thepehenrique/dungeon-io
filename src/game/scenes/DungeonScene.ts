@@ -542,6 +542,8 @@ export class DungeonScene extends Phaser.Scene {
         },
         assignQuickSlot: (definitionId, index) =>
           this.inventorySystem!.assignQuickSlot(index, definitionId),
+        clearQuickSlot: (index) =>
+          this.inventorySystem!.clearQuickSlot(index),
         discard: (index) => {
           const removed = this.inventorySystem!.removeSlot(index);
 

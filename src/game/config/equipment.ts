@@ -21,7 +21,6 @@ export const EQUIPMENT_KIND_ALLOWED_CLASSES: Readonly<
   [EquipmentKind.Sword]: [PlayerClass.Warrior],
   [EquipmentKind.Bow]: [PlayerClass.Archer],
   [EquipmentKind.Staff]: [PlayerClass.Mage],
-  [EquipmentKind.Shield]: [PlayerClass.Warrior],
   [EquipmentKind.Armor]: ALL_CLASSES,
 };
 
@@ -50,19 +49,6 @@ export const EQUIPMENT_DEFINITIONS = {
     allowedClasses: EQUIPMENT_KIND_ALLOWED_CLASSES[EquipmentKind.Sword],
     modifiers: [
       { stat: ItemStat.Damage, mode: ModifierMode.Flat, value: 6 },
-    ],
-  },
-  woodenShield: {
-    id: 'wooden_shield',
-    name: 'Escudo de Madeira',
-    description: '+4 de defesa',
-    type: ItemType.Equipment,
-    rarity: ItemRarity.Common,
-    slot: EquipmentSlot.Secondary,
-    kind: EquipmentKind.Shield,
-    allowedClasses: EQUIPMENT_KIND_ALLOWED_CLASSES[EquipmentKind.Shield],
-    modifiers: [
-      { stat: ItemStat.Defense, mode: ModifierMode.Flat, value: 4 },
     ],
   },
   simpleBow: {
@@ -134,3 +120,41 @@ export const EQUIPMENT_DEFINITIONS = {
     ],
   },
 } as const satisfies Record<string, EquipmentDefinition>;
+
+export const BASE_WEAPON_DEFINITIONS: Readonly<
+  Record<PlayerClass, EquipmentDefinition>
+> = {
+  [PlayerClass.Warrior]: {
+    id: 'base_sword',
+    name: 'Espada Básica',
+    description: 'Arma inicial do Guerreiro.',
+    type: ItemType.Equipment,
+    rarity: ItemRarity.Common,
+    slot: EquipmentSlot.Weapon,
+    kind: EquipmentKind.Sword,
+    allowedClasses: EQUIPMENT_KIND_ALLOWED_CLASSES[EquipmentKind.Sword],
+    modifiers: [],
+  },
+  [PlayerClass.Archer]: {
+    id: 'base_bow',
+    name: 'Arco Básico',
+    description: 'Arma inicial do Arqueiro.',
+    type: ItemType.Equipment,
+    rarity: ItemRarity.Common,
+    slot: EquipmentSlot.Weapon,
+    kind: EquipmentKind.Bow,
+    allowedClasses: EQUIPMENT_KIND_ALLOWED_CLASSES[EquipmentKind.Bow],
+    modifiers: [],
+  },
+  [PlayerClass.Mage]: {
+    id: 'base_staff',
+    name: 'Cajado Básico',
+    description: 'Arma inicial do Mago.',
+    type: ItemType.Equipment,
+    rarity: ItemRarity.Common,
+    slot: EquipmentSlot.Weapon,
+    kind: EquipmentKind.Staff,
+    allowedClasses: EQUIPMENT_KIND_ALLOWED_CLASSES[EquipmentKind.Staff],
+    modifiers: [],
+  },
+};

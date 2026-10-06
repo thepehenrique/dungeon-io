@@ -509,7 +509,7 @@ legend {
 .inventory-quick-slot {
   display: grid;
   min-height: 56px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 10px;
   border: 1px solid #344252;
@@ -529,6 +529,11 @@ legend {
 
 .inventory-quick-slot small {
   color: #94a1af;
+}
+
+.inventory-quick-slot button {
+  padding: 7px 9px;
+  font-size: 10px;
 }
 
 .inventory-feedback {

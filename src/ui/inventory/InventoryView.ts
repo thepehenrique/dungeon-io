@@ -20,19 +20,18 @@ export interface InventoryActions {
     definitionId: string,
     index: number,
   ) => InventoryOperationResult;
+  readonly clearQuickSlot: (index: number) => InventoryOperationResult;
   readonly discard: (index: number) => InventoryOperationResult;
   readonly close: () => void;
 }
 
 const EQUIPMENT_SLOTS = [
   EquipmentSlot.Weapon,
-  EquipmentSlot.Secondary,
   EquipmentSlot.Armor,
 ] as const;
 
 const EQUIPMENT_SLOT_LABELS: Readonly<Record<EquipmentSlot, string>> = {
   [EquipmentSlot.Weapon]: 'Arma',
-  [EquipmentSlot.Secondary]: 'Secundário',
   [EquipmentSlot.Armor]: 'Armadura',
 };
 
@@ -93,7 +92,7 @@ export class InventoryView {
         <div class="inventory-equipped-row">
           <span>${EQUIPMENT_SLOT_LABELS[slot]}</span>
           <strong>${equipped ? escapeHtml(equipped.definition.name) : 'Nenhum'}</strong>
-          ${equipped ? `<button type="button" data-unequip-slot="${slot}">Desequipar</button>` : ''}
+          ${equipped && !equipped.isBase ? `<button type="button" data-unequip-slot="${slot}">Desequipar</button>` : ''}
         </div>
       `;
     }).join('');
@@ -112,6 +111,7 @@ export class InventoryView {
           <span>[${index + 1}]</span>
           <strong>${definition ? escapeHtml(definition.name) : 'Vazio'}</strong>
           ${definition ? `<small>x${quantity}</small>` : ''}
+          ${definition ? `<button type="button" data-clear-quick-index="${index}">Remover</button>` : ''}
         </div>
       `;
     }).join('');
@@ -293,6 +293,17 @@ export class InventoryView {
             false,
           );
         }
+      });
+    }
+
+    for (const button of this.element.querySelectorAll<HTMLButtonElement>('[data-clear-quick-index]')) {
+      button.addEventListener('click', () => {
+        this.handleResult(
+          this.actions.clearQuickSlot(
+            Number(button.dataset.clearQuickIndex),
+          ),
+          false,
+        );
       });
     }
   }
