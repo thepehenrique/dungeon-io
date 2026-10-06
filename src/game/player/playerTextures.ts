@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { PLAYER_CLASS_LIST } from '../config/playerClasses';
 import { PlayerClass } from '../types/player';
 import { ARCHER_TEXTURE_KEYS } from './archerAnimations';
+import { MAGE_TEXTURE_KEYS } from './mageAnimations';
 import { WARRIOR_TEXTURE_KEYS } from './warriorAnimations';
 
 const PLAYER_TEXTURE_SIZE = 48;
@@ -16,7 +17,11 @@ export function getPlayerTextureKey(playerClass: PlayerClass): string {
     return ARCHER_TEXTURE_KEYS.walk;
   }
 
-  return `player-placeholder-${playerClass.toLowerCase()}`;
+  if (playerClass === PlayerClass.Mage) {
+    return MAGE_TEXTURE_KEYS.walk;
+  }
+
+  throw new Error('Unsupported player class.');
 }
 
 export function createPlayerPlaceholderTextures(scene: Phaser.Scene): void {

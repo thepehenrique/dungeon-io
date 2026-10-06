@@ -30,6 +30,15 @@ import {
   WARRIOR_TEXTURE_KEYS,
   type WarriorFacing,
 } from './warriorAnimations';
+import {
+  getMageCastAnimationKey,
+  getMageFacing,
+  getMageIdleFrame,
+  getMageWalkAnimationKey,
+  MAGE_SPRITE,
+  MAGE_TEXTURE_KEYS,
+  type MageFacing,
+} from './mageAnimations';
 
 export interface PlayerIdentity {
   readonly id: string;
@@ -50,6 +59,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private archerFacing: ArcherFacing = 'down';
   private archerMoving = false;
   private archerAttacking = false;
+  private mageFacing: MageFacing = 'down';
+  private mageMoving = false;
+  private mageCasting = false;
   private readonly aimDirection = new Phaser.Math.Vector2(1, 0);
   private blocking = false;
   private dashing = false;
@@ -88,6 +100,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         ARCHER_SPRITE.bodyOffsetY,
       );
       this.showArcherIdleFrame();
+    } else if (this.isMage) {
+      this.setScale(MAGE_SPRITE.scale);
+      this.setCircle(
+        MAGE_SPRITE.bodyRadius,
+        MAGE_SPRITE.bodyOffsetX,
+        MAGE_SPRITE.bodyOffsetY,
+      );
+      this.showMageIdleFrame();
     } else {
       this.setCircle(PLAYER_MOVEMENT.bodyRadius, 6, 6);
     }
@@ -115,11 +135,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const isMoving = direction.lengthSq() > 0;
     this.warriorMoving = isMoving;
     this.archerMoving = isMoving;
+    this.mageMoving = isMoving;
 
     if (direction.lengthSq() === 0) {
       this.setVelocity(0, 0);
       this.updateWarriorMovementAnimation();
       this.updateArcherMovementAnimation();
+      this.updateMageMovementAnimation();
       return;
     }
 
@@ -127,6 +149,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(direction.x, direction.y);
     this.updateWarriorMovementAnimation();
     this.updateArcherMovementAnimation();
+    this.updateMageMovementAnimation();
   }
 
   face(targetX: number, targetY: number): void {
@@ -155,6 +178,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       if (nextFacing !== this.archerFacing) {
         this.archerFacing = nextFacing;
         this.updateArcherMovementAnimation();
+      }
+
+      this.setRotation(0);
+      return;
+    }
+
+    if (this.isMage) {
+      const nextFacing = getMageFacing(targetX - this.x, targetY - this.y);
+
+      if (nextFacing !== this.mageFacing) {
+        this.mageFacing = nextFacing;
+        this.updateMageMovementAnimation();
       }
 
       this.setRotation(0);
@@ -206,6 +241,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this,
     );
     this.play(attackKey);
+  }
+
+  playMageCast(direction: Phaser.Math.Vector2): void {
+    if (!this.isMage || this.dead) {
+      return;
+    }
+
+    this.mageFacing = getMageFacing(direction.x, direction.y);
+    this.mageCasting = true;
+
+    const castKey = getMageCastAnimationKey(this.mageFacing);
+    this.off(
+      Phaser.Animations.Events.ANIMATION_COMPLETE,
+      this.finishMageCast,
+      this,
+    );
+    this.once(
+      Phaser.Animations.Events.ANIMATION_COMPLETE,
+      this.finishMageCast,
+      this,
+    );
+    this.play(castKey);
   }
 
   get combatId(): string {
@@ -330,6 +387,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.playerClass === PlayerClass.Archer;
   }
 
+  private get isMage(): boolean {
+    return this.playerClass === PlayerClass.Mage;
+  }
+
   private updateWarriorMovementAnimation(): void {
     if (!this.isWarrior || this.warriorAttacking || this.dead) {
       return;
@@ -377,6 +438,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     );
   }
 
+  private updateMageMovementAnimation(): void {
+    if (!this.isMage || this.mageCasting || this.dead) {
+      return;
+    }
+
+    if (this.mageMoving) {
+      this.play(getMageWalkAnimationKey(this.mageFacing), true);
+      return;
+    }
+
+    this.showMageIdleFrame();
+  }
+
+  private showMageIdleFrame(): void {
+    this.anims.stop();
+    this.setTexture(MAGE_TEXTURE_KEYS.walk, getMageIdleFrame(this.mageFacing));
+  }
+
   private finishWarriorSwordAttack(): void {
     this.warriorAttacking = false;
     this.updateWarriorMovementAnimation();
@@ -385,6 +464,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private finishArcherBowAttack(): void {
     this.archerAttacking = false;
     this.updateArcherMovementAnimation();
+  }
+
+  private finishMageCast(): void {
+    this.mageCasting = false;
+    this.updateMageMovementAnimation();
   }
 
   private refreshAbilityPresentation(): void {

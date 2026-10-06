@@ -14,6 +14,7 @@ export class FireballWeapon extends PrimaryWeapon {
   }
 
   protected performAttack(direction: Phaser.Math.Vector2): void {
+    this.owner.playMageCast(direction);
     this.projectiles.add(
       new FireballProjectile(this.scene, {
         ownerId: this.owner.playerId,

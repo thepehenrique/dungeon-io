@@ -25,6 +25,10 @@ import {
 } from '../player/archerAnimations';
 import { createPlayerPlaceholderTextures } from '../player/playerTextures';
 import {
+  createMageAnimations,
+  preloadMageSprites,
+} from '../player/mageAnimations';
+import {
   createWarriorAnimations,
   preloadWarriorSprites,
 } from '../player/warriorAnimations';
@@ -40,6 +44,7 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
+    preloadMageSprites(this);
     preloadGoblinSprites(this);
     preloadSkeletonSprites(this);
     preloadZombieSprites(this);
@@ -60,6 +65,7 @@ export class BootScene extends Phaser.Scene {
     createSkeletonAnimations(this);
     createZombieAnimations(this);
     createArcherAnimations(this);
+    createMageAnimations(this);
     createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);
     this.registry.set(REGISTRY_KEYS.GAME_SESSION, new GameSession());
