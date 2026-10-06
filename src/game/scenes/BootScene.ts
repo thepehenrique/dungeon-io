@@ -8,6 +8,14 @@ import {
   createGoblinAnimations,
   preloadGoblinSprites,
 } from '../enemies/goblinAnimations';
+import {
+  createSkeletonAnimations,
+  preloadSkeletonSprites,
+} from '../enemies/skeletonAnimations';
+import {
+  createZombieAnimations,
+  preloadZombieSprites,
+} from '../enemies/zombieAnimations';
 import { createChestPlaceholderTextures } from '../items/chests/chestTextures';
 import { createConsumablePlaceholderTextures } from '../items/consumables/consumableTextures';
 import { createWorldItemPlaceholderTextures } from '../items/world/worldItemTextures';
@@ -33,6 +41,8 @@ export class BootScene extends Phaser.Scene {
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
     preloadGoblinSprites(this);
+    preloadSkeletonSprites(this);
+    preloadZombieSprites(this);
 
     for (const tileset of DUNGEON_TILESETS) {
       this.load.image(tileset.key, `assets/dungeon/${tileset.file}`);
@@ -47,6 +57,8 @@ export class BootScene extends Phaser.Scene {
     createEnemyPlaceholderTextures(this);
     createPlayerPlaceholderTextures(this);
     createGoblinAnimations(this);
+    createSkeletonAnimations(this);
+    createZombieAnimations(this);
     createArcherAnimations(this);
     createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);
