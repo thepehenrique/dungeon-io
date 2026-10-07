@@ -2,8 +2,14 @@ export const DUNGEON_MAP = {
   key: 'dungeon-map-01',
   path: 'assets/dungeon/dungeon-01.tmj',
   scale: 3,
+  ambientTint: 0x70788c,
+  lightingLayer: 'Lighting',
   collisionLayer: 'Collision',
-  spawnLayer: 'SpawnPoints',
+  playerSpawnLayer: 'PlayerSpawns',
+  enemySpawnLayer: 'EnemySpawns',
+  chestSpawnLayer: 'ChestSpawns',
+  keySpawnLayer: 'KeySpawns',
+  exitGateLayer: 'ExitGates',
 } as const;
 
 export const DUNGEON_TILESETS = [
@@ -24,4 +30,5 @@ export const DUNGEON_RENDER_LAYERS = [
   'WallDetails',
   'Obstacles',
   'Decoration',
+  'Lighting',
 ] as const;

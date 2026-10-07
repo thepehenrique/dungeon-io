@@ -7,6 +7,16 @@ from collections import deque
 import json
 from pathlib import Path
 
+from craftpix_object_catalog import (
+    CRAFTPIX_PROPS,
+    CRACKS_FIRST_GID,
+    FIRE_FIRST_GID,
+    OBJECTS_FIRST_GID,
+    WALLS_FIRST_GID,
+    prop_cells,
+    validate_craftpix_catalog,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "public/assets/dungeon/dungeon-01.tmj"
@@ -15,19 +25,34 @@ WIDTH = 72
 HEIGHT = 54
 TILE_SIZE = 16
 
-FLOOR_GID = 139
-WALL_GID = 41
+FLOOR_GID = WALLS_FIRST_GID + 138
+WALL_GID = WALLS_FIRST_GID + 40
 
-OBJECTS_FIRST_GID = 494
-CRACKS_FIRST_GID = 710
-FIRE_FIRST_GID = 830
-
-CRATE_GIDS = [OBJECTS_FIRST_GID + value for value in (124, 125, 126, 129, 130, 131)]
-BARREL_GIDS = [OBJECTS_FIRST_GID + value for value in (127, 132)]
-BONE_GIDS = [OBJECTS_FIRST_GID + value for value in (89, 90)]
-SACK_GIDS = [OBJECTS_FIRST_GID + value for value in (133, 134, 136, 137, 138)]
-CRYSTAL_GIDS = [OBJECTS_FIRST_GID + value for value in (174, 175)]
-TOMB_GIDS = [OBJECTS_FIRST_GID + value for value in (120, 121, 122)]
+CRATE_VARIANTS = (
+    "crate-light-wide",
+    "crate-light-front",
+    "crate-dark-wide",
+    "crate-dark-front",
+)
+BARREL_VARIANTS = ("barrel-light", "barrel-dark")
+BONE_VARIANTS = ("bones-left", "bones-right")
+VASE_VARIANTS = (
+    "vase-blue-large",
+    "vase-blue-medium",
+    "vase-brown-large",
+    "vase-brown-medium",
+    "vase-brown-small",
+)
+GOLD_VARIANTS = (
+    "gold-flat-wide",
+    "gold-pile-wide",
+    "gold-pile-medium",
+    "gold-pile-compact",
+    "gold-scattered-wide",
+    "gold-scattered-small",
+    "gold-pile-small",
+)
+CRYSTAL_VARIANTS = ("crystal-small", "crystal-large")
 
 
 def empty_grid() -> list[list[int]]:
@@ -150,17 +175,72 @@ def surrounding_walls(walkable: set[tuple[int, int]]) -> set[tuple[int, int]]:
     return walls
 
 
-def put(grid: list[list[int]], x: int, y: int, gid: int) -> None:
+def put(
+    grid: list[list[int]],
+    x: int,
+    y: int,
+    gid: int,
+    *,
+    catalogued_prop: bool = False,
+) -> None:
+    if gid >= OBJECTS_FIRST_GID and not catalogued_prop:
+        raise ValueError(
+            "CraftPix object/effect GIDs must be placed through CRAFTPIX_PROPS"
+        )
     if 0 <= x < WIDTH and 0 <= y < HEIGHT:
         grid[y][x] = gid
 
 
+def add_prop(
+    objects: dict[tuple[int, int], int],
+    prop_key: str,
+    x: int,
+    y: int,
+) -> None:
+    assert CRAFTPIX_PROPS[prop_key].solid, (
+        f"Non-solid CraftPix prop {prop_key!r} cannot be an obstacle"
+    )
+    for cell_x, cell_y, gid in prop_cells(prop_key, x, y):
+        cell = (cell_x, cell_y)
+        assert cell not in objects, f"CraftPix props overlap at {cell}"
+        objects[cell] = gid
+
+
+def add_barrel(
+    objects: dict[tuple[int, int], int],
+    x: int,
+    y: int,
+    variant: int = 0,
+) -> None:
+    add_prop(objects, BARREL_VARIANTS[variant % len(BARREL_VARIANTS)], x, y)
+
+
+def add_crate(
+    objects: dict[tuple[int, int], int],
+    x: int,
+    y: int,
+    variant: int = 0,
+) -> None:
+    add_prop(objects, CRATE_VARIANTS[variant % len(CRATE_VARIANTS)], x, y)
+
+
+def add_tomb(objects: dict[tuple[int, int], int], x: int, y: int) -> None:
+    add_prop(objects, "tomb-stone", x, y)
+
+
+def place_prop(grid: list[list[int]], prop_key: str, x: int, y: int) -> None:
+    for cell_x, cell_y, gid in prop_cells(prop_key, x, y):
+        assert 0 <= cell_x < WIDTH and 0 <= cell_y < HEIGHT, (
+            f"CraftPix prop {prop_key!r} outside map at {(cell_x, cell_y)}"
+        )
+        assert grid[cell_y][cell_x] == 0, (
+            f"CraftPix prop {prop_key!r} overlaps layer at {(cell_x, cell_y)}"
+        )
+        put(grid, cell_x, cell_y, gid, catalogued_prop=True)
+
+
 def place_fire(grid: list[list[int]], center_x: int, center_y: int) -> None:
-    # First compact 3x3 fire frame from fire_animation.png.
-    for row in range(3):
-        for column in range(3):
-            local_id = row * 11 + column
-            put(grid, center_x + column - 1, center_y + row - 1, FIRE_FIRST_GID + local_id)
+    place_prop(grid, "fire-small", center_x - 1, center_y - 1)
 
 
 def tiled_property(name: str, value: object, property_type: str) -> dict[str, object]:
@@ -190,12 +270,28 @@ def point_object(
     }
 
 
-def build_objects(blocked: set[tuple[int, int]]) -> list[dict[str, object]]:
-    objects: list[dict[str, object]] = []
+def build_spawn_layers(
+    blocked: set[tuple[int, int]],
+) -> dict[str, list[dict[str, object]]]:
+    player_spawns: list[dict[str, object]] = []
+    enemy_spawns: list[dict[str, object]] = []
+    chest_spawns: list[dict[str, object]] = []
+    key_spawns: list[dict[str, object]] = []
+    exit_gates: list[dict[str, object]] = []
     object_id = 1
 
-    objects.append(point_object(object_id, "PlayerSpawn", "PLAYER", 36, 49, []))
-    object_id += 1
+    player_positions = [
+        ("PlayerSpawn_01", 36, 49),  # Entrada; active spawn used by Phaser today.
+        ("PlayerSpawn_02", 38, 34),  # Salao central.
+        ("PlayerSpawn_03", 35, 5),   # Cripta.
+        ("PlayerSpawn_04", 11, 20),  # Prisoes.
+        ("PlayerSpawn_05", 60, 10),  # Armazem.
+        ("PlayerSpawn_06", 61, 46),  # Ruinas.
+    ]
+    for name, x, y in player_positions:
+        assert (x, y) not in blocked, f"Player spawn blocked: {name}"
+        player_spawns.append(point_object(object_id, name, "PLAYER", x, y, []))
+        object_id += 1
 
     enemy_positions = [
         # Hub
@@ -245,7 +341,7 @@ def build_objects(blocked: set[tuple[int, int]]) -> list[dict[str, object]]:
 
     for name, enemy_type, x, y in enemy_positions:
         assert (x, y) not in blocked, f"Enemy spawn blocked: {name}"
-        objects.append(
+        enemy_spawns.append(
             point_object(
                 object_id,
                 name,
@@ -280,7 +376,7 @@ def build_objects(blocked: set[tuple[int, int]]) -> list[dict[str, object]]:
 
     for name, rarity, x, y in chest_positions:
         assert (x, y) not in blocked, f"Chest spawn blocked: {name}"
-        objects.append(
+        chest_spawns.append(
             point_object(
                 object_id,
                 name,
@@ -292,7 +388,37 @@ def build_objects(blocked: set[tuple[int, int]]) -> list[dict[str, object]]:
         )
         object_id += 1
 
-    return objects
+    key_positions = [
+        ("KeySpawn_01", 20, 8),
+        ("KeySpawn_02", 40, 12),
+        ("KeySpawn_03", 7, 18),
+        ("KeySpawn_04", 65, 15),
+        ("KeySpawn_05", 23, 40),
+        ("KeySpawn_06", 59, 44),
+    ]
+    for name, x, y in key_positions:
+        assert (x, y) not in blocked, f"Key spawn blocked: {name}"
+        key_spawns.append(point_object(object_id, name, "KEY", x + 0.5, y + 0.5, []))
+        object_id += 1
+
+    exit_positions = [
+        ("ExitGate_01", 17, 5),   # Noroeste / capela.
+        ("ExitGate_02", 67, 7),   # Nordeste / armazem.
+        ("ExitGate_03", 6, 49),   # Sudoeste / ossuario.
+        ("ExitGate_04", 66, 45),  # Sudeste / ruinas.
+    ]
+    for name, x, y in exit_positions:
+        assert (x, y) not in blocked, f"Exit gate blocked: {name}"
+        exit_gates.append(point_object(object_id, name, "EXIT_GATE", x + 0.5, y + 0.5, []))
+        object_id += 1
+
+    return {
+        "PlayerSpawns": player_spawns,
+        "EnemySpawns": enemy_spawns,
+        "ChestSpawns": chest_spawns,
+        "KeySpawns": key_spawns,
+        "ExitGates": exit_gates,
+    }
 
 
 def assert_reachable(
@@ -345,6 +471,7 @@ def tile_layer(layer_id: int, name: str, grid: list[list[int]], visible: bool = 
 
 
 def build_map() -> dict[str, object]:
+    validate_craftpix_catalog()
     walkable, _ = build_walkable()
     wall_cells = surrounding_walls(walkable)
 
@@ -354,6 +481,7 @@ def build_map() -> dict[str, object]:
     wall_details = empty_grid()
     obstacles = empty_grid()
     decoration = empty_grid()
+    lighting = empty_grid()
     collision = empty_grid()
 
     for x, y in walkable:
@@ -364,18 +492,51 @@ def build_map() -> dict[str, object]:
 
     solid_objects: dict[tuple[int, int], int] = {}
 
-    # Central hall pillars and cover.
-    for position in ((29, 26), (42, 26), (29, 34), (42, 34)):
-        solid_objects[position] = OBJECTS_FIRST_GID + 127
-    for index, position in enumerate(((34, 28), (38, 31), (32, 34), (40, 24))):
-        solid_objects[position] = CRATE_GIDS[index % len(CRATE_GIDS)]
+    # Central hall: paired stone-column tiles create real pillars and four
+    # readable lanes through the room instead of placeholder barrels.
+    for x, y in ((30, 25), (41, 25), (30, 33), (41, 33)):
+        add_prop(solid_objects, "stone-column", x, y)
+
+    # A compact fire shrine anchors the hub while leaving circulation on every
+    # side. Its collision also turns the landmark into useful combat cover.
+    for x, y in (
+        (35, 29), (36, 29), (37, 29),
+        (35, 30), (36, 30), (37, 30),
+        (35, 31), (36, 31), (37, 31),
+    ):
+        solid_objects[(x, y)] = WALL_GID
+
+    hub_crates = (
+        ((34, 28), 1),
+        ((38, 31), 0),
+        ((32, 34), 2),
+        ((40, 24), 3),
+    )
+    for position, variant in hub_crates:
+        add_crate(solid_objects, *position, variant)
+
+    # Entrance props frame the room without closing its north, west or east
+    # exits, nor the clear space around PlayerSpawn_01.
+    add_crate(solid_objects, 31, 51, 1)
+    add_barrel(solid_objects, 40, 51)
 
     # Crypt tombs and cover.
     for start_x, y in ((29, 7), (37, 10), (18, 7)):
-        for offset, gid in enumerate(TOMB_GIDS):
-            solid_objects[(start_x + offset, y)] = gid
-    for position in ((32, 11), (40, 5)):
-        solid_objects[position] = BARREL_GIDS[0]
+        add_tomb(solid_objects, start_x, y)
+    for index, (x, y) in enumerate(((32, 11), (40, 5))):
+        add_barrel(solid_objects, x, y, index)
+
+    # Prison cover reinforces narrow encounters without sealing the cell doors
+    # or either route back toward the hub and catacombs.
+    prison_positions = [
+        (5, 15), (7, 20), (11, 12), (12, 20),
+        (17, 14), (19, 20), (23, 16), (23, 22),
+    ]
+    for index, position in enumerate(prison_positions):
+        if index % 3 == 0:
+            add_barrel(solid_objects, *position, index)
+        else:
+            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
 
     # Storage stacks leave several navigable lanes.
     storage_positions = [
@@ -383,71 +544,152 @@ def build_map() -> dict[str, object]:
         (58, 17), (63, 17), (55, 23), (58, 25), (61, 23), (63, 26),
     ]
     for index, position in enumerate(storage_positions):
-        pool = CRATE_GIDS if index % 3 else BARREL_GIDS
-        solid_objects[position] = pool[index % len(pool)]
+        if index % 3 == 0:
+            add_barrel(solid_objects, *position, index)
+        else:
+            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
 
     # Catacomb and ossuary obstacles.
-    for index, position in enumerate(((7, 36), (13, 31), (18, 38), (23, 35), (9, 48), (15, 44))):
-        solid_objects[position] = BARREL_GIDS[index % len(BARREL_GIDS)]
+    for index, position in enumerate((
+        (7, 36), (13, 31), (18, 38), (23, 35), (9, 48), (15, 44),
+        (6, 30), (10, 39), (18, 42), (24, 33), (7, 43), (15, 49),
+    )):
+        add_barrel(solid_objects, *position, index)
 
     # Broken ruins and scattered cover.
-    for index, position in enumerate(((50, 35), (53, 44), (58, 37), (62, 40), (65, 45), (49, 46))):
-        solid_objects[position] = (CRATE_GIDS + BARREL_GIDS)[index % 8]
+    ruin_positions = (
+        (50, 34), (53, 44), (58, 37), (62, 40), (64, 44), (49, 46),
+        (48, 38), (52, 33), (57, 35), (61, 47), (66, 35), (67, 44),
+    )
+    for index, position in enumerate(ruin_positions):
+        if index in (1, 4, 8, 10):
+            add_prop(solid_objects, "stone-column", *position)
+        else:
+            # Narrow orientations fit the irregular ruin floor without
+            # spilling into its broken walls.
+            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
 
     for (x, y), gid in solid_objects.items():
         assert (x, y) in walkable, f"Obstacle outside floor: {(x, y)}"
-        put(obstacles, x, y, gid)
+        put(obstacles, x, y, gid, catalogued_prop=True)
         put(collision, x, y, WALL_GID)
 
-    # Connected eight-tile strips from decorative_cracks_floor.png. The source
-    # atlas is compositional, so its pieces must remain adjacent.
+    # Connected strips remain a single catalog object, so future edits cannot
+    # accidentally place an isolated crack fragment.
     for start_x, y in (
-        (31, 29),  # central hall
         (29, 12),  # crypt
         (56, 14),  # storage
         (6, 37),   # catacombs
         (58, 45),  # ruins
-        (32, 50),  # entrance
     ):
-        for offset in range(8):
-            position = (start_x + offset, y)
-            if position in walkable:
-                put(
-                    floor_details,
-                    position[0],
-                    position[1],
-                    CRACKS_FIRST_GID + 88 + offset,
-                )
+        assert all((start_x + offset, y) in walkable for offset in range(8))
+        place_prop(floor_details, "floor-crack-strip", start_x, y)
+
+    # Small native floor marks give the entrance and hub a hand-built rhythm
+    # without the artificial appearance of long repeated crack strips.
+    floor_marks = [
+        # Central hall
+        (27, 24, 0), (33, 23, 1), (39, 23, 2), (44, 25, 3),
+        (27, 29, 2), (32, 30, 3), (40, 29, 0), (44, 34, 1),
+        (27, 36, 3), (33, 36, 0), (39, 35, 1), (45, 37, 2),
+        # Entrance / spawn
+        (31, 47, 2), (34, 48, 0), (38, 47, 3), (41, 49, 1),
+        (32, 52, 1), (36, 51, 3), (39, 52, 0),
+        # Crypt and chapel
+        (18, 5, 0), (22, 7, 2), (28, 4, 1), (33, 6, 3),
+        (39, 8, 0), (43, 12, 2), (30, 11, 1),
+        # Prisons
+        (5, 12, 3), (7, 17, 0), (11, 14, 2), (13, 21, 1),
+        (17, 16, 0), (20, 14, 3), (22, 19, 1),
+        # Storage wings
+        (53, 7, 1), (57, 10, 3), (61, 7, 0), (66, 14, 2),
+        (54, 18, 3), (59, 16, 1), (63, 19, 0),
+        (54, 22, 2), (58, 24, 0), (62, 26, 3), (65, 23, 1),
+        # Catacombs and ossuary
+        (5, 31, 2), (10, 30, 0), (13, 37, 3), (7, 39, 1),
+        (18, 33, 1), (20, 38, 2), (24, 41, 0),
+        (6, 44, 3), (11, 47, 1), (15, 43, 2),
+        # Ruins and optional chamber
+        (49, 25, 0), (54, 27, 2), (58, 29, 3),
+        (48, 33, 1), (51, 39, 3), (56, 46, 0), (60, 36, 2),
+        (63, 43, 1), (67, 48, 3), (64, 24, 2), (68, 27, 0),
+    ]
+    for x, y, mark_index in floor_marks:
+        if (
+            (x, y) in walkable
+            and (x, y) not in solid_objects
+            and floor_details[y][x] == 0
+        ):
+            place_prop(floor_details, f"floor-mark-{mark_index}", x, y)
 
     # Region-specific decoration.
     decorative_objects = [
+        # entrance supplies and small accents
+        (30, 47, VASE_VARIANTS[0]), (41, 47, VASE_VARIANTS[2]),
+        (33, 51, BONE_VARIANTS[0]), (39, 50, VASE_VARIANTS[1]),
+        # central hall edge dressing leaves its combat lanes open
+        (26, 23, VASE_VARIANTS[3]), (45, 23, VASE_VARIANTS[0]),
+        (27, 35, BONE_VARIANTS[1]), (44, 36, VASE_VARIANTS[4]),
         # bones in crypt/catacombs
-        (28, 5, BONE_GIDS[0]), (34, 9, BONE_GIDS[1]), (43, 12, BONE_GIDS[0]),
-        (6, 32, BONE_GIDS[1]), (12, 38, BONE_GIDS[0]), (19, 41, BONE_GIDS[1]),
-        (8, 45, BONE_GIDS[0]), (13, 43, BONE_GIDS[1]),
-        # sacks in storage
-        (53, 12, SACK_GIDS[0]), (57, 13, SACK_GIDS[2]), (64, 9, SACK_GIDS[3]),
-        (60, 22, SACK_GIDS[1]), (65, 27, SACK_GIDS[4]),
+        (28, 5, BONE_VARIANTS[0]), (34, 9, BONE_VARIANTS[1]), (43, 12, BONE_VARIANTS[0]),
+        (6, 32, BONE_VARIANTS[1]), (12, 38, BONE_VARIANTS[0]), (19, 41, BONE_VARIANTS[1]),
+        (8, 44, BONE_VARIANTS[0]), (13, 43, BONE_VARIANTS[1]),
+        # prison debris and sparse valuables
+        (5, 18, BONE_VARIANTS[0]), (12, 13, VASE_VARIANTS[4]),
+        (18, 22, BONE_VARIANTS[1]), (22, 14, GOLD_VARIANTS[2]),
+        # storage pottery, loose gold and supplies
+        (53, 12, VASE_VARIANTS[0]), (57, 13, VASE_VARIANTS[2]), (64, 9, VASE_VARIANTS[3]),
+        (60, 22, VASE_VARIANTS[1]), (65, 27, VASE_VARIANTS[4]),
+        (55, 18, GOLD_VARIANTS[2]), (61, 12, GOLD_VARIANTS[6]), (63, 24, GOLD_VARIANTS[0]),
         # crystals and rubble accents in ruins
-        (49, 39, CRYSTAL_GIDS[0]), (63, 35, CRYSTAL_GIDS[1]),
+        (49, 39, CRYSTAL_VARIANTS[0]), (63, 35, CRYSTAL_VARIANTS[1]),
+        (54, 34, CRYSTAL_VARIANTS[1]), (66, 43, CRYSTAL_VARIANTS[0]),
+        (50, 47, GOLD_VARIANTS[3]), (64, 47, GOLD_VARIANTS[1]),
+        # optional chamber reward dressing
+        (66, 25, VASE_VARIANTS[0]), (69, 25, GOLD_VARIANTS[6]),
     ]
-    for x, y, gid in decorative_objects:
-        if (x, y) in walkable and (x, y) not in solid_objects:
-            put(decoration, x, y, gid)
+    decoration_cells: set[tuple[int, int]] = set()
+    for x, y, prop_key in decorative_objects:
+        cells = {(cell_x, cell_y) for cell_x, cell_y, _ in prop_cells(prop_key, x, y)}
+        assert cells <= walkable, f"Decoration {prop_key!r} outside floor: {cells - walkable}"
+        assert not cells & set(solid_objects), (
+            f"Decoration {prop_key!r} overlaps obstacle: {cells & set(solid_objects)}"
+        )
+        assert not cells & decoration_cells, (
+            f"Decoration {prop_key!r} overlaps decoration: {cells & decoration_cells}"
+        )
+        place_prop(decoration, prop_key, x, y)
+        decoration_cells.update(cells)
 
-    for x, y in ((31, 22), (41, 22), (27, 31), (45, 31), (29, 4), (43, 4), (53, 6), (67, 18), (48, 32), (67, 47)):
-        place_fire(decoration, x, y)
+    # Wall torches use the neighboring collision cell as their anchor so the
+    # flame is mounted on masonry and the halo extends into the room.
+    wall_torches = (
+        (31, 21), (41, 21), (24, 31), (47, 31),
+        (31, 45), (41, 45),
+        (29, 2), (43, 2),
+        (5, 9), (25, 15),
+        (53, 5), (68, 18),
+        (5, 28), (17, 47),
+        (68, 47),
+    )
+    for x, y in wall_torches:
+        assert (x, y) in wall_cells, f"Torch is not mounted on a wall: {(x, y)}"
+        place_fire(lighting, x, y)
 
-    # Barred details identify the prison without closing its routes.
-    for x, y, local_id in ((9, 12, 456), (9, 16, 457), (17, 18, 456), (21, 18, 457)):
-        put(wall_details, x, y, 1 + local_id)
+    # The central fire is a brazier on a solid shrine, not a wall torch.
+    place_fire(lighting, 36, 30)
 
     blocked = wall_cells | set(solid_objects)
-    objects = build_objects(blocked)
-    assert_reachable(walkable, set(solid_objects), objects)
+    spawn_layers = build_spawn_layers(blocked)
+    all_spawn_objects = [
+        obj
+        for objects in spawn_layers.values()
+        for obj in objects
+    ]
+    assert_reachable(walkable, set(solid_objects), all_spawn_objects)
 
     region_objects = []
-    next_region_id = len(objects) + 1
+    next_region_id = len(all_spawn_objects) + 1
     for name, x, y, width, height in ROOMS:
         region_objects.append(
             {
@@ -476,7 +718,7 @@ def build_map() -> dict[str, object]:
         "tileheight": TILE_SIZE,
         "infinite": False,
         "backgroundcolor": "#08090d",
-        "nextlayerid": 10,
+        "nextlayerid": 15,
         "nextobjectid": next_region_id,
         "layers": [
             tile_layer(1, "Floor", floor),
@@ -485,20 +727,65 @@ def build_map() -> dict[str, object]:
             tile_layer(4, "WallDetails", wall_details),
             tile_layer(5, "Obstacles", obstacles),
             tile_layer(6, "Decoration", decoration),
-            tile_layer(7, "Collision", collision, visible=False),
+            tile_layer(7, "Lighting", lighting),
+            tile_layer(8, "Collision", collision, visible=False),
             {
-                "id": 8,
-                "name": "SpawnPoints",
+                "id": 9,
+                "name": "PlayerSpawns",
                 "type": "objectgroup",
                 "x": 0,
                 "y": 0,
                 "opacity": 1,
                 "visible": True,
                 "draworder": "topdown",
-                "objects": objects,
+                "objects": spawn_layers["PlayerSpawns"],
             },
             {
-                "id": 9,
+                "id": 10,
+                "name": "EnemySpawns",
+                "type": "objectgroup",
+                "x": 0,
+                "y": 0,
+                "opacity": 1,
+                "visible": True,
+                "draworder": "topdown",
+                "objects": spawn_layers["EnemySpawns"],
+            },
+            {
+                "id": 11,
+                "name": "ChestSpawns",
+                "type": "objectgroup",
+                "x": 0,
+                "y": 0,
+                "opacity": 1,
+                "visible": True,
+                "draworder": "topdown",
+                "objects": spawn_layers["ChestSpawns"],
+            },
+            {
+                "id": 12,
+                "name": "KeySpawns",
+                "type": "objectgroup",
+                "x": 0,
+                "y": 0,
+                "opacity": 1,
+                "visible": True,
+                "draworder": "topdown",
+                "objects": spawn_layers["KeySpawns"],
+            },
+            {
+                "id": 13,
+                "name": "ExitGates",
+                "type": "objectgroup",
+                "x": 0,
+                "y": 0,
+                "opacity": 1,
+                "visible": True,
+                "draworder": "topdown",
+                "objects": spawn_layers["ExitGates"],
+            },
+            {
+                "id": 14,
                 "name": "Regions",
                 "type": "objectgroup",
                 "x": 0,
@@ -569,11 +856,13 @@ def build_map() -> dict[str, object]:
 def main() -> None:
     map_data = build_map()
     OUTPUT.write_text(json.dumps(map_data, ensure_ascii=False, indent=2) + "\n")
-    spawn_objects = map_data["layers"][7]["objects"]
-    enemies = sum(1 for obj in spawn_objects if obj["type"] == "ENEMY")
-    chests = sum(1 for obj in spawn_objects if obj["type"] == "CHEST")
+    object_counts = {
+        layer["name"]: len(layer["objects"])
+        for layer in map_data["layers"]
+        if layer["type"] == "objectgroup"
+    }
     print(f"Generated {OUTPUT}")
-    print(f"Map: {WIDTH}x{HEIGHT}; rooms: {len(ROOMS)}; enemies: {enemies}; chests: {chests}")
+    print(f"Map: {WIDTH}x{HEIGHT}; rooms: {len(ROOMS)}; objects: {object_counts}")
 
 
 if __name__ == "__main__":

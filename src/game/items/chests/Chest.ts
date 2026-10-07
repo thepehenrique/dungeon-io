@@ -9,7 +9,7 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
   readonly label: string;
 
   private chestState = ChestState.Closed;
-  private readonly openTextureKey: string;
+  private readonly openAnimationKey: string;
 
   constructor(scene: Phaser.Scene, x: number, y: number, rarity: ItemRarity) {
     const definition = CHEST_DEFINITIONS[rarity];
@@ -18,16 +18,18 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
       throw new Error(`Chest definition not implemented for rarity: ${rarity}`);
     }
 
-    super(scene, x, y, definition.closedTextureKey);
+    super(scene, x, y, definition.textureKey, definition.closedFrame);
     this.rarity = rarity;
     this.label = definition.label;
-    this.openTextureKey = definition.openTextureKey;
+    this.openAnimationKey = definition.openAnimationKey;
 
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
+    this.setOrigin(0.5, 1).setScale(definition.scale);
 
     const body = this.body as Phaser.Physics.Arcade.StaticBody;
     body.setSize(definition.bodyWidth, definition.bodyHeight);
+    body.setOffset(definition.bodyOffsetX, definition.bodyOffsetY);
     body.updateFromGameObject();
     this.setDepth(7);
   }
@@ -59,7 +61,7 @@ export class Chest extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.chestState = ChestState.Open;
-    this.setTexture(this.openTextureKey);
+    this.play(this.openAnimationKey);
     return true;
   }
 }

@@ -7,10 +7,14 @@ export const CHEST_DEFINITIONS: Readonly<
   [ItemRarity.Common]: {
     rarity: ItemRarity.Common,
     label: 'Baú comum',
-    closedTextureKey: 'chest-common-closed',
-    openTextureKey: 'chest-common-open',
-    bodyWidth: 46,
-    bodyHeight: 34,
+    textureKey: 'craftpix-chest-common',
+    openAnimationKey: 'craftpix-chest-common-open',
+    closedFrame: 'front-0',
+    scale: 3,
+    bodyWidth: 30,
+    bodyHeight: 8,
+    bodyOffsetX: 1,
+    bodyOffsetY: 14,
   },
 };
 

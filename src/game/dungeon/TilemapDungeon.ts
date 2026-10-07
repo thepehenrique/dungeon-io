@@ -51,6 +51,12 @@ export class TilemapDungeon {
       }
 
       layer.setScale(DUNGEON_MAP.scale).setDepth(depth);
+
+      if (layerName === DUNGEON_MAP.lightingLayer) {
+        layer.setBlendMode(Phaser.BlendModes.ADD);
+      } else {
+        layer.setTint(DUNGEON_MAP.ambientTint);
+      }
     }
 
     const collisionLayer = map.createLayer(DUNGEON_MAP.collisionLayer, tilesets, 0, 0);
@@ -124,46 +130,60 @@ export class TilemapDungeon {
   }
 
   private readSpawnPoints(map: Phaser.Tilemaps.Tilemap): void {
-    const layer = map.getObjectLayer(DUNGEON_MAP.spawnLayer);
+    const playerLayer = map.getObjectLayer(DUNGEON_MAP.playerSpawnLayer);
+    const enemyLayer = map.getObjectLayer(DUNGEON_MAP.enemySpawnLayer);
+    const chestLayer = map.getObjectLayer(DUNGEON_MAP.chestSpawnLayer);
+    const keyLayer = map.getObjectLayer(DUNGEON_MAP.keySpawnLayer);
+    const exitGateLayer = map.getObjectLayer(DUNGEON_MAP.exitGateLayer);
 
-    if (!layer) {
-      throw new Error('Dungeon spawn layer is missing.');
+    if (
+      !playerLayer ||
+      !enemyLayer ||
+      !chestLayer ||
+      !keyLayer ||
+      !exitGateLayer
+    ) {
+      throw new Error('One or more dungeon spawn layers are missing.');
     }
 
+    const initialPlayerSpawn = playerLayer.objects[0];
+
+    if (!initialPlayerSpawn) {
+      throw new Error('Dungeon player spawn layer is empty.');
+    }
+
+    this.playerSpawn = {
+      x: (initialPlayerSpawn.x ?? 0) * DUNGEON_MAP.scale,
+      y: (initialPlayerSpawn.y ?? 0) * DUNGEON_MAP.scale,
+    };
     this.enemySpawns = [];
     this.chestSpawns = [];
 
-    for (const object of layer.objects) {
+    for (const object of enemyLayer.objects) {
       const x = (object.x ?? 0) * DUNGEON_MAP.scale;
       const y = (object.y ?? 0) * DUNGEON_MAP.scale;
       const properties = (object.properties ?? []) as TiledProperty[];
+      const enemyType = this.getProperty(properties, 'enemyType');
+      const level = this.getProperty(properties, 'level');
 
-      if (object.type === 'PLAYER') {
-        this.playerSpawn = { x, y };
-        continue;
+      if (typeof enemyType === 'string' && this.isEnemyType(enemyType)) {
+        this.enemySpawns.push({
+          type: enemyType,
+          x,
+          y,
+          level: typeof level === 'number' ? level : 1,
+        });
       }
+    }
 
-      if (object.type === 'ENEMY') {
-        const enemyType = this.getProperty(properties, 'enemyType');
-        const level = this.getProperty(properties, 'level');
+    for (const object of chestLayer.objects) {
+      const x = (object.x ?? 0) * DUNGEON_MAP.scale;
+      const y = (object.y ?? 0) * DUNGEON_MAP.scale;
+      const properties = (object.properties ?? []) as TiledProperty[];
+      const rarity = this.getProperty(properties, 'rarity');
 
-        if (typeof enemyType === 'string' && this.isEnemyType(enemyType)) {
-          this.enemySpawns.push({
-            type: enemyType,
-            x,
-            y,
-            level: typeof level === 'number' ? level : 1,
-          });
-        }
-        continue;
-      }
-
-      if (object.type === 'CHEST') {
-        const rarity = this.getProperty(properties, 'rarity');
-
-        if (typeof rarity === 'string' && this.isRarity(rarity)) {
-          this.chestSpawns.push({ rarity, x, y });
-        }
+      if (typeof rarity === 'string' && this.isRarity(rarity)) {
+        this.chestSpawns.push({ rarity, x, y });
       }
     }
   }

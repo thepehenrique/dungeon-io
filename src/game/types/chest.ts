@@ -8,10 +8,14 @@ export enum ChestState {
 export interface ChestDefinition {
   readonly rarity: ItemRarity;
   readonly label: string;
-  readonly closedTextureKey: string;
-  readonly openTextureKey: string;
+  readonly textureKey: string;
+  readonly openAnimationKey: string;
+  readonly closedFrame: string;
+  readonly scale: number;
   readonly bodyWidth: number;
   readonly bodyHeight: number;
+  readonly bodyOffsetX: number;
+  readonly bodyOffsetY: number;
 }
 
 export interface ChestSpawnDefinition {
