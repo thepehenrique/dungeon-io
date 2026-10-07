@@ -85,12 +85,12 @@ export class InventoryView {
       `;
     }).join('');
 
-    const equippedRows = EQUIPMENT_SLOTS.map((slot) => {
+    const equippedSlots = EQUIPMENT_SLOTS.map((slot) => {
       const equipped = this.equipment.getEquipped(slot);
 
       return `
-        <div class="inventory-equipped-row">
-          <span>${EQUIPMENT_SLOT_LABELS[slot]}</span>
+        <div class="inventory-equipment-slot">
+          <span class="inventory-equipment-slot__label">${EQUIPMENT_SLOT_LABELS[slot]}</span>
           <strong>${equipped ? escapeHtml(equipped.definition.name) : 'Nenhum'}</strong>
           ${equipped && !equipped.isBase ? `<button type="button" data-unequip-slot="${slot}">Desequipar</button>` : ''}
         </div>
@@ -99,6 +99,13 @@ export class InventoryView {
     const backpack = this.inventory.backpack
       ? getItemDefinition(this.inventory.backpack.definitionId)
       : null;
+    const backpackSlot = `
+      <div class="inventory-equipment-slot inventory-equipment-slot--backpack">
+        <span class="inventory-equipment-slot__label">Mochila</span>
+        <strong>${backpack ? escapeHtml(backpack.name) : 'Nenhuma'}</strong>
+        <small>${this.inventory.capacity} espaços</small>
+      </div>
+    `;
     const quickSlots = [0, 1, 2].map((index) => {
       const definitionId = this.inventory.getQuickSlotDefinitionId(index);
       const definition = definitionId ? getItemDefinition(definitionId) : null;
@@ -120,31 +127,33 @@ export class InventoryView {
     this.element.innerHTML = `
       <div class="inventory-panel">
         <header class="inventory-header">
-          <div>
-            <p class="eyebrow">GERENCIAMENTO DE EQUIPAMENTO</p>
-            <h2 id="inventory-title">INVENTÁRIO</h2>
-          </div>
+          <h2 id="inventory-title">INVENTÁRIO</h2>
           <div class="inventory-capacity">${this.inventory.usedSlots} / ${this.inventory.capacity}</div>
           <button class="inventory-close" type="button" data-close-inventory>Fechar [TAB]</button>
         </header>
 
         <div class="inventory-layout">
-          <section class="inventory-section">
+          <section class="inventory-section inventory-equipment-section">
             <h3>Equipado</h3>
             <div class="inventory-equipped">
-              ${equippedRows}
-              <div class="inventory-equipped-row">
-                <span>Mochila</span>
-                <strong>${backpack ? escapeHtml(backpack.name) : 'Nenhuma'}</strong>
-              </div>
+              ${equippedSlots}
+              ${backpackSlot}
             </div>
+          </section>
 
-            <h3>Mochila</h3>
+          <section class="inventory-section inventory-backpack-section">
+            <div class="inventory-backpack-heading">
+              <h3>Mochila</h3>
+              <span>${backpack ? escapeHtml(backpack.name) : 'Sem mochila · 3 espaços'}</span>
+            </div>
             <div class="inventory-grid">${slots}</div>
           </section>
 
           <aside class="inventory-details">
-            ${this.renderDetails(selected)}
+            <h3>Detalhes</h3>
+            <div class="inventory-details__content">
+              ${this.renderDetails(selected)}
+            </div>
           </aside>
         </div>
 
@@ -170,9 +179,7 @@ export class InventoryView {
   private renderDetails(definition: RegisteredItemDefinition | null): string {
     if (!definition || this.selectedIndex === null) {
       return `
-        <p class="eyebrow">DETALHES</p>
-        <h3>Selecione um item</h3>
-        <p class="inventory-details__empty">Escolha um slot para ver atributos e ações.</p>
+        <p class="inventory-details__empty">Selecione um item</p>
       `;
     }
 
@@ -183,6 +190,9 @@ export class InventoryView {
       .join('');
     const typeDetail = definition.type === ItemType.Equipment
       ? `<p>Slot: ${EQUIPMENT_SLOT_LABELS[definition.slot]}</p>`
+      : '';
+    const description = definition.description
+      ? `<p class="inventory-item-description">${escapeHtml(definition.description)}</p>`
       : '';
     let actions = '';
 
@@ -202,10 +212,10 @@ export class InventoryView {
     }
 
     return `
-      <p class="eyebrow">DETALHES</p>
-      <h3 style="color: ${rarity.color}">${escapeHtml(definition.name)}</h3>
+      <h4 style="color: ${rarity.color}">${escapeHtml(definition.name)}</h4>
       <strong class="inventory-rarity" style="color: ${rarity.color}">${rarity.label.toUpperCase()}</strong>
       ${typeDetail}
+      ${description}
       <ul>${details}</ul>
       <div class="inventory-actions">${actions}</div>
     `;

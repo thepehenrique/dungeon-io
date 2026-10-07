@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
+import { PHASER_UI_ASSETS } from '../config/uiAssets';
 import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
 import { createDungeonPlaceholderTextures } from '../dungeon/dungeonTextures';
 import { createEnemyPlaceholderTextures } from '../enemies/enemyTextures';
@@ -53,6 +54,10 @@ export class BootScene extends Phaser.Scene {
     preloadSkeletonSprites(this);
     preloadZombieSprites(this);
     preloadChestSprites(this);
+
+    for (const asset of PHASER_UI_ASSETS) {
+      this.load.image(asset.key, asset.path);
+    }
 
     for (const tileset of DUNGEON_TILESETS) {
       this.load.image(tileset.key, `assets/dungeon/${tileset.file}`);

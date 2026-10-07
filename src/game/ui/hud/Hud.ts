@@ -2,13 +2,15 @@ import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
 import { RUN_OBJECTIVE_CONFIG } from '../../config/runObjective';
+import { UI_ASSETS } from '../../config/uiAssets';
 import { getItemDefinition } from '../../items/ItemRegistry';
+import { OBJECTIVE_TEXTURE_KEYS } from '../../objectives/objectiveTextures';
 import type { ClassAbilityController } from '../../player/ClassAbilityController';
 import type { Player } from '../../player/Player';
 import type { InventorySystem } from '../../systems/InventorySystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
 import type { PlayerClassDefinition } from '../../types/player';
-import { RunPhase, type RunState } from '../../types/run';
+import type { RunState } from '../../types/run';
 import { HudBar } from './HudBar';
 import { HudQuickSlot } from './HudQuickSlot';
 
@@ -21,11 +23,9 @@ export class Hud {
   private readonly inventory: InventorySystem;
   private readonly classAbility: ClassAbilityController;
   private readonly levelText: Phaser.GameObjects.Text;
-  private readonly killsText: Phaser.GameObjects.Text;
-  private readonly goldText: Phaser.GameObjects.Text;
+  private readonly timerFrame: Phaser.GameObjects.Image;
   private readonly timeText: Phaser.GameObjects.Text;
-  private readonly keyText: Phaser.GameObjects.Text;
-  private readonly objectiveText: Phaser.GameObjects.Text;
+  private readonly keyIcon: Phaser.GameObjects.Image;
   private readonly quickSlots: readonly HudQuickSlot[];
   private readonly classAbilityText: Phaser.GameObjects.Text;
   private readonly healthBar: HudBar;
@@ -35,11 +35,9 @@ export class Hud {
   private lastMaxHealth = Number.NaN;
   private lastExperience = Number.NaN;
   private lastLevel = Number.NaN;
-  private lastKills = Number.NaN;
-  private lastGold = Number.NaN;
   private lastQuickSlotSignature = '';
   private lastAbilityText = '';
-  private lastObjectiveSignature = '';
+  private lastTimerSignature = '';
 
   constructor(
     scene: Phaser.Scene,
@@ -63,148 +61,120 @@ export class Hud {
       .setScrollFactor(0)
       .setDepth(500);
 
-    const panel = scene.add
-      .rectangle(0, 0, HUD_LAYOUT.width, HUD_LAYOUT.height, HUD_COLORS.panel, 0.92)
-      .setOrigin(0)
-      .setStrokeStyle(1, HUD_COLORS.panelBorder);
-    const accent = scene.add
-      .rectangle(0, 0, 5, HUD_LAYOUT.height, playerClass.color)
-      .setOrigin(0);
-    const nameText = scene.add.text(HUD_LAYOUT.padding, 11, player.playerName, {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '18px',
-      fontStyle: 'bold',
-      color: HUD_COLORS.primaryText,
-      fixedWidth: 190,
-    });
-    const classText = scene.add.text(218, 15, playerClass.label, {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '12px',
-      fontStyle: 'bold',
-      color: playerClass.cssColor,
-    });
-    this.levelText = scene.add
-      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, 13, '', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        color: '#e6c87a',
-      })
-      .setOrigin(1, 0);
-    this.killsText = scene.add.text(HUD_LAYOUT.padding, HUD_LAYOUT.statsY, '', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '12px',
-      color: HUD_COLORS.secondaryText,
-    });
-    this.goldText = scene.add
-      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, HUD_LAYOUT.statsY, '', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '12px',
-        fontStyle: 'bold',
-        color: '#e6c87a',
-      })
-      .setOrigin(1, 0);
-    this.timeText = scene.add.text(HUD_LAYOUT.padding, HUD_LAYOUT.timerY, '', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '13px',
-      fontStyle: 'bold',
-      color: HUD_COLORS.primaryText,
-    });
-    this.keyText = scene.add
-      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, HUD_LAYOUT.timerY, '', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '13px',
-        fontStyle: 'bold',
-        color: '#e6c87a',
-      })
-      .setOrigin(1, 0);
-    this.objectiveText = scene.add
-      .text(HUD_LAYOUT.width / 2, HUD_LAYOUT.objectiveY, '', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '12px',
-        fontStyle: 'bold',
-        color: HUD_COLORS.secondaryText,
-      })
-      .setOrigin(0.5, 0);
-
-    this.topContainer.add([
-      panel,
-      accent,
-      nameText,
-      classText,
-      this.levelText,
-      this.killsText,
-      this.goldText,
-      this.timeText,
-      this.keyText,
-      this.objectiveText,
-    ]);
     this.healthBar = new HudBar(
       scene,
       this.topContainer,
-      HUD_LAYOUT.healthY,
+      HUD_LAYOUT.healthBar,
+      UI_ASSETS.healthBar.key,
       'HP',
       HUD_COLORS.health,
     );
     this.experienceBar = new HudBar(
       scene,
       this.topContainer,
-      HUD_LAYOUT.experienceY,
+      HUD_LAYOUT.experienceBar,
+      UI_ASSETS.experienceBar.key,
       'XP',
       HUD_COLORS.experience,
     );
-
-    this.quickSlots = [1, 2, 3].map((key, index) => {
-      const x =
-        index * (HUD_LAYOUT.quickSlots.width + HUD_LAYOUT.quickSlots.gap);
-
-      return new HudQuickSlot(scene, this.actionContainer, x, 0, key);
-    });
-    const abilityX =
-      HUD_LAYOUT.quickSlots.width * 3 +
-      HUD_LAYOUT.quickSlots.gap * 2 +
-      HUD_LAYOUT.ability.gap;
-    const abilityBackground = scene.add
-      .rectangle(
-        abilityX,
-        0,
-        HUD_LAYOUT.ability.width,
-        HUD_LAYOUT.ability.height,
-        HUD_COLORS.slot,
-        0.94,
-      )
+    this.levelText = scene.add
+      .text(HUD_LAYOUT.level.x, HUD_LAYOUT.level.y, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '12px',
+        fontStyle: 'bold',
+        color: '#e6c87a',
+        stroke: '#080a0d',
+        strokeThickness: 3,
+      })
+      .setOrigin(0, 0.5);
+    this.timerFrame = scene.add
+      .image(HUD_LAYOUT.timer.x, HUD_LAYOUT.timer.y, UI_ASSETS.timer.key)
       .setOrigin(0)
-      .setStrokeStyle(1, playerClass.color);
-    const abilityLabel = scene.add.text(abilityX + 11, 8, 'HABILIDADE', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '10px',
-      fontStyle: 'bold',
-      color: HUD_COLORS.mutedText,
-    });
-    this.classAbilityText = scene.add
+      .setDisplaySize(HUD_LAYOUT.timer.width, HUD_LAYOUT.timer.height);
+    this.timeText = scene.add
       .text(
-        abilityX + 11,
-        31,
+        HUD_LAYOUT.timer.x + HUD_LAYOUT.timer.width / 2,
+        HUD_LAYOUT.timer.y + HUD_LAYOUT.timer.height / 2,
         '',
         {
           fontFamily: 'Arial, sans-serif',
-          fontSize: '12px',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: HUD_COLORS.primaryText,
+          stroke: '#080a0d',
+          strokeThickness: 3,
+        },
+      )
+      .setOrigin(0.5);
+    this.keyIcon = scene.add
+      .image(HUD_LAYOUT.key.x, HUD_LAYOUT.key.y, OBJECTIVE_TEXTURE_KEYS.dungeonKey)
+      .setOrigin(0)
+      .setDisplaySize(HUD_LAYOUT.key.width, HUD_LAYOUT.key.height)
+      .setVisible(false);
+    this.topContainer.add([
+      this.levelText,
+      this.timerFrame,
+      this.timeText,
+      this.keyIcon,
+    ]);
+
+    this.quickSlots = [1, 2, 3].map((key, index) => {
+      const x =
+        HUD_LAYOUT.quickSlots.startX +
+        index * (HUD_LAYOUT.quickSlots.width + HUD_LAYOUT.quickSlots.gap);
+
+      return new HudQuickSlot(
+        scene,
+        this.actionContainer,
+        x,
+        HUD_LAYOUT.quickSlots.y,
+        key,
+      );
+    });
+    const abilityBackground = scene.add
+      .image(HUD_LAYOUT.ability.x, HUD_LAYOUT.ability.y, UI_ASSETS.abilitySlot.key)
+      .setOrigin(0)
+      .setDisplaySize(HUD_LAYOUT.ability.width, HUD_LAYOUT.ability.height);
+    const abilityLabel = scene.add
+      .text(
+        HUD_LAYOUT.ability.x + HUD_LAYOUT.ability.width / 2,
+        HUD_LAYOUT.ability.y + 13,
+        'SPACE',
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '9px',
+          fontStyle: 'bold',
+          color: HUD_COLORS.slotKey,
+          stroke: '#080a0d',
+          strokeThickness: 2,
+        },
+      )
+      .setOrigin(0.5);
+    this.classAbilityText = scene.add
+      .text(
+        HUD_LAYOUT.ability.x + HUD_LAYOUT.ability.width / 2,
+        HUD_LAYOUT.ability.y + 40,
+        '',
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '9px',
           fontStyle: 'bold',
           color: playerClass.cssColor,
-          fixedWidth: HUD_LAYOUT.ability.width - 22,
+          align: 'center',
+          fixedWidth: HUD_LAYOUT.ability.width - 16,
+          wordWrap: { width: HUD_LAYOUT.ability.width - 16 },
+          stroke: '#080a0d',
+          strokeThickness: 2,
         },
-      );
+      )
+      .setOrigin(0.5);
     this.actionContainer.add([
       abilityBackground,
       abilityLabel,
       this.classAbilityText,
     ]);
 
-    this.scaleManager.on(
-      Phaser.Scale.Events.RESIZE,
-      this.handleResize,
-      this,
-    );
+    this.scaleManager.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.reposition();
     this.update();
   }
@@ -217,8 +187,7 @@ export class Hud {
       })
       .join('|');
     const abilityText = this.classAbility.hudText;
-    const objectiveSignature = [
-      this.run.phase,
+    const timerSignature = [
       this.run.hasDungeonKey,
       Math.ceil(this.run.remainingTimeMs / 1000),
     ].join('|');
@@ -248,16 +217,6 @@ export class Hud {
       this.levelText.setText(`LV ${this.run.level}`);
     }
 
-    if (this.run.kills !== this.lastKills) {
-      this.lastKills = this.run.kills;
-      this.killsText.setText(`Kills: ${this.run.kills}`);
-    }
-
-    if (this.run.gold !== this.lastGold) {
-      this.lastGold = this.run.gold;
-      this.goldText.setText(`Ouro: ${this.run.gold}`);
-    }
-
     if (quickSlotSignature !== this.lastQuickSlotSignature) {
       this.lastQuickSlotSignature = quickSlotSignature;
 
@@ -268,43 +227,37 @@ export class Hud {
           : null;
         this.quickSlots[index].update(
           definition
-            ? `${definition.name} x${this.inventory.getQuantity(definition.id)}`
-            : 'Vazio',
+            ? formatQuickSlotContent(
+                definition.name,
+                this.inventory.getQuantity(definition.id),
+              )
+            : '—',
         );
       }
     }
 
     if (abilityText !== this.lastAbilityText) {
       this.lastAbilityText = abilityText;
-      this.classAbilityText.setText(abilityText);
+      this.classAbilityText.setText(
+        abilityText.replace(/^\[SPACE\]\s*/, ''),
+      );
     }
 
-    if (objectiveSignature !== this.lastObjectiveSignature) {
-      this.lastObjectiveSignature = objectiveSignature;
+    if (timerSignature !== this.lastTimerSignature) {
+      this.lastTimerSignature = timerSignature;
       const urgent =
         this.run.remainingTimeMs <= RUN_OBJECTIVE_CONFIG.urgentTimeThresholdMs;
       this.timeText
-        .setText(`TEMPO ${formatRemainingTime(this.run.remainingTimeMs)}`)
-        .setColor(
-          urgent
-            ? '#ff6b62'
-            : this.run.phase === RunPhase.Escape
-              ? '#f4d17a'
-              : '#f4f5f7',
-        );
-      this.keyText.setText(
-        this.run.hasDungeonKey ? 'CHAVE: ENCONTRADA' : 'CHAVE: —',
-      );
-      this.objectiveText.setText(getObjectiveText(this.run));
+        .setText(formatRemainingTime(this.run.remainingTimeMs))
+        .setFontSize(urgent ? 16 : 13)
+        .setColor(urgent ? '#ff6b62' : '#f4f5f7');
+      this.timerFrame.setTint(urgent ? 0xff7770 : 0xffffff);
+      this.keyIcon.setVisible(this.run.hasDungeonKey);
     }
   }
 
   destroy(): void {
-    this.scaleManager.off(
-      Phaser.Scale.Events.RESIZE,
-      this.handleResize,
-      this,
-    );
+    this.scaleManager.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.topContainer.destroy();
     this.actionContainer.destroy();
   }
@@ -316,17 +269,11 @@ export class Hud {
   private reposition(): void {
     const viewportWidth = this.scaleManager.gameSize.width;
     const viewportHeight = this.scaleManager.gameSize.height;
-    const availableWidth = Math.max(
+    const topScale = Math.min(1, viewportWidth / HUD_LAYOUT.width);
+    const actionScale = Math.min(
       1,
-      viewportWidth - HUD_LAYOUT.sideMargin * 2,
+      (viewportWidth - HUD_LAYOUT.sideMargin * 2) / HUD_LAYOUT.actionWidth,
     );
-    const topScale = Math.min(1, availableWidth / HUD_LAYOUT.width);
-    const actionWidth =
-      HUD_LAYOUT.quickSlots.width * 3 +
-      HUD_LAYOUT.quickSlots.gap * 2 +
-      HUD_LAYOUT.ability.gap +
-      HUD_LAYOUT.ability.width;
-    const actionScale = Math.min(1, availableWidth / actionWidth);
 
     this.topContainer
       .setScale(topScale)
@@ -337,28 +284,17 @@ export class Hud {
     this.actionContainer
       .setScale(actionScale)
       .setPosition(
-        (viewportWidth - actionWidth * actionScale) / 2,
+        (viewportWidth - HUD_LAYOUT.actionWidth * actionScale) / 2,
         viewportHeight -
           HUD_LAYOUT.quickSlots.bottom -
-          HUD_LAYOUT.quickSlots.height * actionScale,
+          HUD_LAYOUT.actionHeight * actionScale,
       );
   }
 }
 
-function getObjectiveText(run: RunState): string {
-  if (run.phase === RunPhase.Preparation) {
-    return 'Objetivo: Sobreviva e fique mais forte.';
-  }
-
-  if (run.phase === RunPhase.Escape && !run.hasDungeonKey) {
-    return 'Objetivo: Encontre a chave.';
-  }
-
-  if (run.phase === RunPhase.Escape) {
-    return 'Objetivo: Encontre a saída.';
-  }
-
-  return '';
+function formatQuickSlotContent(name: string, quantity: number): string {
+  const compactName = name.replace(/^Poção de /, '');
+  return `${compactName}\nx${quantity}`;
 }
 
 function formatRemainingTime(remainingMs: number): string {

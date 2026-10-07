@@ -1,0 +1,12 @@
+{
+  "texture": "slot_states.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": {
+    "normal": { "x": 0, "y": 0 },
+    "hover": { "x": 64, "y": 0 },
+    "selected": { "x": 128, "y": 0 },
+    "cooldown": { "x": 192, "y": 0 },
+    "disabled": { "x": 256, "y": 0 }
+  }
+}

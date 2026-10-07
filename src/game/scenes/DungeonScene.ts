@@ -170,7 +170,7 @@ export class DungeonScene extends Phaser.Scene {
       {
         onKeyCollected: () => {
           this.hud?.update();
-          this.showRunAnnouncement('CHAVE ENCONTRADA', 'Encontre a saída.');
+          this.showRunAnnouncement('CHAVE ENCONTRADA', 'ENCONTRE A SAÍDA');
         },
         onEscaped: () => this.endRun(RunEndReason.Escaped),
       },
@@ -181,7 +181,7 @@ export class DungeonScene extends Phaser.Scene {
         this.hud?.update();
         this.showRunAnnouncement(
           'SAIA DA MASMORRA',
-          'Encontre a chave e procure a saída.',
+          'ENCONTRE A CHAVE',
         );
       },
       onTimeExpired: () => {
@@ -309,6 +309,7 @@ export class DungeonScene extends Phaser.Scene {
       this.inventorySystem,
       this.playerController.classAbility,
     );
+    this.showRunAnnouncement('SOBREVIVA E FIQUE MAIS FORTE', '');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.inventoryKey) {
         this.input.keyboard?.removeKey(this.inventoryKey, true, true);
@@ -493,17 +494,18 @@ export class DungeonScene extends Phaser.Scene {
 
   private showRunAnnouncement(title: string, subtitle: string): void {
     this.runAnnouncementText?.destroy();
+    const content = subtitle ? `${title}\n${subtitle}` : title;
     const text = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT * 0.3, `${title}\n${subtitle}`, {
+      .text(GAME_WIDTH / 2, GAME_HEIGHT * 0.2, content, {
         fontFamily: 'Georgia, serif',
-        fontSize: '34px',
+        fontSize: '26px',
         fontStyle: 'bold',
         align: 'center',
         color: '#f4d17a',
         stroke: '#080a0d',
-        strokeThickness: 7,
-        backgroundColor: '#080c12dd',
-        padding: { x: 28, y: 18 },
+        strokeThickness: 6,
+        backgroundColor: '#080c12cc',
+        padding: { x: 22, y: 13 },
       })
       .setOrigin(0.5)
       .setScrollFactor(0)

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
+import { UI_ASSETS } from '../../config/uiAssets';
 
 export class HudQuickSlot {
   private readonly contentText: Phaser.GameObjects.Text;
@@ -14,23 +15,28 @@ export class HudQuickSlot {
   ) {
     const { width, height } = HUD_LAYOUT.quickSlots;
     const background = scene.add
-      .rectangle(x, y, width, height, HUD_COLORS.slot, 0.94)
+      .image(x, y, UI_ASSETS.slot.key)
       .setOrigin(0)
-      .setStrokeStyle(1, HUD_COLORS.panelBorder);
-    const keyText = scene.add.text(x + 9, y + 7, `[${key}]`, {
+      .setDisplaySize(width, height);
+    const keyText = scene.add.text(x + 8, y + 6, `[${key}]`, {
       fontFamily: 'Arial, sans-serif',
-      fontSize: '11px',
+      fontSize: '10px',
       fontStyle: 'bold',
       color: HUD_COLORS.slotKey,
+      stroke: '#080a0d',
+      strokeThickness: 2,
     });
     this.contentText = scene.add
       .text(x + width / 2, y + 38, '', {
         fontFamily: 'Arial, sans-serif',
-        fontSize: '11px',
+        fontSize: '9px',
+        fontStyle: 'bold',
         color: HUD_COLORS.primaryText,
         align: 'center',
-        fixedWidth: width - 14,
-        wordWrap: { width: width - 14 },
+        fixedWidth: width - 12,
+        wordWrap: { width: width - 12 },
+        stroke: '#080a0d',
+        strokeThickness: 2,
       })
       .setOrigin(0.5);
 
