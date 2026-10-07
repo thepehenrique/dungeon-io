@@ -28,6 +28,48 @@ TILE_SIZE = 16
 FLOOR_GID = WALLS_FIRST_GID + 138
 WALL_GID = WALLS_FIRST_GID + 40
 
+# Verified against walls_floor.png (17 columns, 16 px tiles). These are the
+# architectural pieces used by the first room in the CraftPix sheet: a thin
+# north wall, vertical side walls and a two-tile-high south-facing wall. Keep
+# the local IDs here so changing the visual family never changes collision or
+# gameplay data.
+WALL_TILE = {
+    "north_left": WALLS_FIRST_GID + 18,
+    "north": WALLS_FIRST_GID + 19,
+    "north_right": WALLS_FIRST_GID + 20,
+    "west": WALLS_FIRST_GID + 35,
+    "east": WALLS_FIRST_GID + 37,
+    "south_left": WALLS_FIRST_GID + 52,
+    "south": WALLS_FIRST_GID + 53,
+    "south_right": WALLS_FIRST_GID + 54,
+    "front_left": WALLS_FIRST_GID + 69,
+    "front": WALLS_FIRST_GID + 70,
+    "front_right": WALLS_FIRST_GID + 71,
+    "front_bottom_left": WALLS_FIRST_GID + 86,
+    "front_bottom": WALLS_FIRST_GID + 87,
+    "front_bottom_right": WALLS_FIRST_GID + 88,
+    "solid": WALL_GID,
+}
+
+# Open north/south doorway from the static door family at the bottom of
+# walls_floor.png. The centre column is the passage; the side columns are the
+# masonry frame. Rows are ordered from lintel to threshold.
+OPEN_ARCH_STAMP = (
+    (WALLS_FIRST_GID + 430, WALLS_FIRST_GID + 431, WALLS_FIRST_GID + 432),
+    (WALLS_FIRST_GID + 447, WALLS_FIRST_GID + 448, WALLS_FIRST_GID + 449),
+    (WALLS_FIRST_GID + 464, WALLS_FIRST_GID + 465, WALLS_FIRST_GID + 466),
+)
+
+# Door thresholds are deliberately placed only on north/south passages,
+# matching the perspective supplied by the pack. (centre x, threshold y)
+DOORWAYS = (
+    (41, 21),  # Cripta -> Salao Central
+    (41, 15),  # Cripta -> corredor
+    (41, 42),  # Salao Central -> Catacumbas
+    (71, 26),  # Armazem -> Arsenal Leste
+    (71, 43),  # Arsenal Leste -> Ruinas Sudeste
+)
+
 CRATE_VARIANTS = (
     "crate-light-wide",
     "crate-light-front",
@@ -82,34 +124,15 @@ def add_rect(cells: set[tuple[int, int]], x: int, y: int, width: int, height: in
 
 
 ROOMS = [
-    ("Salao Central", 29, 22, 27, 16),
-    ("Guarda Oeste", 24, 26, 6, 8),
-    ("Guarda Leste", 55, 25, 7, 8),
-    ("Cripta Principal", 28, 3, 22, 11),
-    ("Capela Oeste", 17, 5, 11, 8),
-    ("Capela Leste", 50, 6, 10, 8),
-    ("Antecamera da Cripta", 32, 14, 14, 8),
-    ("Prisoes Superiores", 4, 10, 11, 13),
-    ("Bloco Leste das Prisoes", 16, 13, 9, 11),
-    ("Guarita das Prisoes", 5, 24, 10, 7),
-    ("Passagens Oeste", 2, 31, 13, 9),
-    ("Armazem Norte", 60, 4, 15, 9),
-    ("Anexo Oeste do Armazem", 52, 14, 7, 7),
-    ("Armazem Principal", 58, 12, 21, 14),
-    ("Armazem Sul", 54, 22, 13, 8),
-    ("Deposito Leste", 74, 17, 9, 10),
-    ("Passagem Leste", 70, 29, 12, 7),
-    ("Ruinas Oeste", 4, 35, 14, 16),
-    ("Ruinas Interiores", 17, 32, 11, 14),
-    ("Ossuario", 18, 46, 15, 9),
-    ("Entrada Sul", 29, 46, 15, 9),
-    ("Catacumbas Centrais", 32, 39, 12, 16),
-    ("Catacumbas Leste", 44, 38, 13, 11),
-    ("Santuario Inferior", 44, 49, 14, 7),
-    ("Ruinas Norte", 48, 31, 20, 18),
-    ("Ruinas Sudeste", 60, 42, 14, 12),
-    ("Camara Opcional", 66, 23, 8, 7),
-    ("Galerias do Leste", 70, 38, 12, 14),
+    ("Salao Central", 31, 22, 22, 14),
+    ("Cripta Principal", 33, 4, 18, 11),
+    ("Prisoes", 5, 8, 18, 14),
+    ("Guarita Oeste", 6, 28, 17, 10),
+    ("Ruinas Oeste", 5, 43, 22, 11),
+    ("Catacumbas", 33, 43, 20, 11),
+    ("Armazem", 61, 6, 18, 15),
+    ("Arsenal Leste", 62, 27, 17, 11),
+    ("Ruinas Sudeste", 61, 44, 18, 10),
 ]
 
 
@@ -118,111 +141,26 @@ def build_walkable() -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
     for _, x, y, width, height in ROOMS:
         add_rect(walkable, x, y, width, height)
 
-    # Negative spaces break the broad regional bounds into L-shaped rooms,
-    # courtyards and narrow connectors. Corridors are applied afterwards so
-    # they deliberately bridge these voids instead of merging every wing into
-    # one rectangular floor mass.
-    void_areas = (
-        (25, 14, 7, 7),
-        (46, 14, 6, 8),
-        (15, 24, 9, 9),
-        (28, 38, 4, 8),
-        (44, 34, 4, 5),
-        (62, 30, 8, 8),
-        (68, 36, 6, 6),
-    )
-    for rectangle in void_areas:
-        void_cells: set[tuple[int, int]] = set()
-        add_rect(void_cells, *rectangle)
-        walkable.difference_update(void_cells)
-
+    # Every connector is three or five tiles wide. Rooms stay separated by
+    # enough void for the south-facing wall to keep its full visual height.
     corridors = [
-        (35, 13, 5, 10),   # cripta -> salao central
-        (25, 8, 4, 3),     # capela oeste -> cripta
-        (49, 8, 12, 3),    # cripta -> armazem norte
-        (22, 18, 8, 4),    # prisoes -> salao central
-        (13, 11, 5, 3),    # loop alto das prisoes
-        (14, 17, 3, 4),    # ligacao entre blocos
-        (9, 22, 3, 3),     # prisoes -> guarita
-        (12, 28, 13, 4),   # guarita -> guarda oeste
-        (14, 34, 11, 3),   # passagens oeste -> ruinas
-        (25, 33, 5, 5),    # ruinas -> salao central
-        (31, 37, 5, 10),   # salao -> catacumbas
-        (40, 37, 5, 4),    # acesso sul alternativo
-        (27, 47, 3, 4),    # ossuario -> entrada sul
-        (41, 47, 4, 3),    # catacumbas -> santuario
-        (55, 26, 7, 4),    # salao -> armazem sul
-        (57, 29, 5, 4),    # armazem -> ruinas norte
-        (68, 27, 6, 4),    # camara -> passagem leste
-        (60, 32, 11, 3),   # atalho ruinas -> passagem leste
-        (71, 25, 4, 5),    # deposito -> camara
-        (73, 34, 4, 5),    # passagem leste -> galerias
-        (67, 45, 4, 4),    # ruinas sudeste -> galerias
-        (56, 39, 5, 4),    # catacumbas -> ruinas
-        (25, 43, 8, 3),    # loop oeste -> entrada sul
+        (39, 15, 5, 7),    # cripta -> salao
+        (23, 14, 8, 3),    # prisoes -> salao
+        (23, 30, 8, 3),    # guarita -> salao
+        (12, 22, 4, 6),    # prisoes -> guarita
+        (13, 38, 4, 5),    # guarita -> ruinas oeste
+        (27, 48, 6, 3),    # ruinas oeste -> catacumbas
+        (39, 36, 5, 7),    # salao -> catacumbas
+        (51, 9, 10, 3),    # cripta -> armazem
+        (53, 29, 9, 3),    # salao -> arsenal
+        (69, 21, 4, 6),    # armazem -> arsenal
+        (69, 38, 4, 6),    # arsenal -> ruinas sudeste
+        (53, 48, 8, 3),    # catacumbas -> ruinas sudeste
     ]
     for rectangle in corridors:
         add_rect(walkable, *rectangle)
 
     internal_walls: set[tuple[int, int]] = set()
-
-    # Architectural thresholds keep the major wings visually distinct while
-    # retaining broad doorways and alternate entrances.
-    for x in range(28, 50):
-        if x not in (34, 35, 39, 40, 45):
-            internal_walls.add((x, 13))
-    for x in range(29, 56):
-        if x not in (29, 30, 35, 36, 37, 38, 39, 50, 51):
-            internal_walls.add((x, 21))
-    for x in range(60, 75):
-        if x not in (62, 63, 64, 70, 71):
-            internal_walls.add((x, 11))
-
-    # Prison partitions with several door gaps.
-    for y in range(11, 22):
-        if y not in (14, 18):
-            internal_walls.add((9, y))
-    for x in range(16, 25):
-        if x not in (19, 23):
-            internal_walls.add((x, 18))
-
-    # Warehouse partitions form shelves and side lanes with several crossings.
-    for y in range(13, 25):
-        if y not in (16, 21):
-            internal_walls.add((69, y))
-    for x in range(59, 79):
-        if x not in (63, 70, 76):
-            internal_walls.add((x, 19))
-
-    # Catacomb partitions create readable bends without becoming a linear maze.
-    for x in range(5, 18):
-        if x not in (9, 10, 14):
-            internal_walls.add((x, 40))
-    for y in range(33, 46):
-        if y not in (36, 42):
-            internal_walls.add((21, y))
-    for x in range(19, 33):
-        if x not in (24, 29):
-            internal_walls.add((x, 49))
-    for y in range(35, 46):
-        if y not in (36, 42):
-            internal_walls.add((17, y))
-    for y in range(40, 54):
-        if y not in (44, 50):
-            internal_walls.add((48, y))
-
-    # Broken walls split the southeastern ruins while preserving loops.
-    for y in range(32, 48):
-        if y not in (36, 42, 44, 46):
-            internal_walls.add((59, y))
-    for x in range(60, 74):
-        if x not in (64, 69):
-            internal_walls.add((x, 41))
-    for x in range(71, 82):
-        if x not in (75, 79):
-            internal_walls.add((x, 44))
-
-    walkable.difference_update(internal_walls)
     return walkable, internal_walls
 
 
@@ -241,6 +179,96 @@ def surrounding_walls(walkable: set[tuple[int, int]]) -> set[tuple[int, int]]:
                 ):
                     walls.add(candidate)
     return walls
+
+
+def build_architecture(
+    walkable: set[tuple[int, int]],
+    wall_cells: set[tuple[int, int]],
+) -> tuple[
+    list[list[int]],
+    list[list[int]],
+    list[list[int]],
+    set[tuple[int, int]],
+]:
+    """Build standing walls, front faces and open door frames."""
+    walls_back = empty_grid()
+    walls_front = empty_grid()
+    doors = empty_grid()
+    door_frame_collision: set[tuple[int, int]] = set()
+
+    for x, y in sorted(wall_cells, key=lambda cell: (cell[1], cell[0])):
+        floor_north = (x, y - 1) in walkable
+        floor_south = (x, y + 1) in walkable
+        floor_west = (x - 1, y) in walkable
+        floor_east = (x + 1, y) in walkable
+
+        if floor_north:
+            begins = (x - 1, y - 1) not in walkable
+            ends = (x + 1, y - 1) not in walkable
+            tile = WALL_TILE["south"]
+            if begins and not ends:
+                tile = WALL_TILE["south_left"]
+            elif ends and not begins:
+                tile = WALL_TILE["south_right"]
+            put(walls_back, x, y, tile)
+
+            # The extra facade rows are visual overhangs. Never cover a room
+            # or corridor below them.
+            for offset_y, middle_key, left_key, right_key in (
+                (1, "front", "front_left", "front_right"),
+                (2, "front_bottom", "front_bottom_left", "front_bottom_right"),
+            ):
+                target = (x, y + offset_y)
+                if target in walkable or target in wall_cells:
+                    continue
+                face_tile = WALL_TILE[middle_key]
+                if begins and not ends:
+                    face_tile = WALL_TILE[left_key]
+                elif ends and not begins:
+                    face_tile = WALL_TILE[right_key]
+                put(walls_front, target[0], target[1], face_tile)
+        elif floor_south:
+            begins = (x - 1, y + 1) not in walkable
+            ends = (x + 1, y + 1) not in walkable
+            tile = WALL_TILE["north"]
+            if begins and not ends:
+                tile = WALL_TILE["north_left"]
+            elif ends and not begins:
+                tile = WALL_TILE["north_right"]
+            put(walls_back, x, y, tile)
+        elif floor_east:
+            put(walls_back, x, y, WALL_TILE["west"])
+        elif floor_west:
+            put(walls_back, x, y, WALL_TILE["east"])
+        else:
+            put(walls_back, x, y, WALL_TILE["solid"])
+
+    # Door art and physical access are kept separate: only the two masonry
+    # uprights block movement/sight; the centre passage always remains open.
+    for center_x, threshold_y in DOORWAYS:
+        passage_cells = {
+            (center_x, threshold_y - 1),
+            (center_x, threshold_y),
+        }
+        assert passage_cells <= walkable, (
+            f"Door passage is outside the floor at {(center_x, threshold_y)}"
+        )
+        origin_x = center_x - 1
+        origin_y = threshold_y - 2
+        for row_index, row in enumerate(OPEN_ARCH_STAMP):
+            for column_index, gid in enumerate(row):
+                put(doors, origin_x + column_index, origin_y + row_index, gid)
+
+        for frame_cell in (
+            (center_x - 1, threshold_y - 1),
+            (center_x + 1, threshold_y - 1),
+            (center_x - 1, threshold_y),
+            (center_x + 1, threshold_y),
+        ):
+            if frame_cell in walkable:
+                door_frame_collision.add(frame_cell)
+
+    return walls_back, walls_front, doors, door_frame_collision
 
 
 def put(
@@ -349,12 +377,12 @@ def build_spawn_layers(
     object_id = 1
 
     player_positions = [
-        ("PlayerSpawn_01", 36, 49),  # Entrada; active spawn used by Phaser today.
-        ("PlayerSpawn_02", 38, 34),  # Salao central.
-        ("PlayerSpawn_03", 35, 5),   # Cripta.
-        ("PlayerSpawn_04", 11, 20),  # Prisoes.
-        ("PlayerSpawn_05", 60, 10),  # Armazem.
-        ("PlayerSpawn_06", 61, 46),  # Ruinas.
+        ("PlayerSpawn_01", 42, 51),  # Entrada sul / catacumbas.
+        ("PlayerSpawn_02", 42, 32),  # Salao central.
+        ("PlayerSpawn_03", 42, 8),   # Cripta.
+        ("PlayerSpawn_04", 14, 18),  # Prisoes.
+        ("PlayerSpawn_05", 70, 16),  # Armazem.
+        ("PlayerSpawn_06", 70, 50),  # Ruinas sudeste.
     ]
     for name, x, y in player_positions:
         assert (x, y) not in blocked, f"Player spawn blocked: {name}"
@@ -362,49 +390,44 @@ def build_spawn_layers(
         object_id += 1
 
     enemy_positions = [
-        # Hub
-        ("Goblin Hub Oeste", "GOBLIN", 29, 27),
-        ("Skeleton Hub Norte", "SKELETON_WARRIOR", 36, 25),
-        ("Goblin Hub Leste", "GOBLIN", 43, 31),
-        ("Zombie Hub Sul", "ZOMBIE", 34, 35),
-        # Crypt and chapel
-        ("Skeleton Cripta 1", "SKELETON_WARRIOR", 30, 6),
-        ("Skeleton Cripta 2", "SKELETON_WARRIOR", 36, 7),
-        ("Skeleton Cripta 3", "SKELETON_WARRIOR", 41, 11),
-        ("Skeleton Capela 1", "SKELETON_WARRIOR", 19, 6),
-        ("Skeleton Capela 2", "SKELETON_WARRIOR", 22, 9),
-        # Prisons
-        ("Zombie Prisao 1", "ZOMBIE", 6, 13),
-        ("Skeleton Prisao 2", "SKELETON_WARRIOR", 12, 16),
-        ("Goblin Prisao 3", "GOBLIN", 6, 21),
-        ("Zombie Prisao 4", "ZOMBIE", 18, 15),
-        ("Skeleton Prisao 5", "SKELETON_WARRIOR", 22, 21),
-        # Storage
-        ("Goblin Armazem 1", "GOBLIN", 55, 9),
-        ("Goblin Armazem 2", "GOBLIN", 63, 8),
-        ("Zombie Armazem 3", "ZOMBIE", 60, 15),
-        ("Goblin Armazem 4", "GOBLIN", 66, 17),
-        ("Goblin Armazem Sul 1", "GOBLIN", 56, 24),
-        ("Skeleton Armazem Sul 2", "SKELETON_WARRIOR", 62, 27),
-        # Catacombs
-        ("Skeleton Catacumba 1", "SKELETON_WARRIOR", 7, 31),
-        ("Zombie Catacumba 2", "ZOMBIE", 12, 37),
-        ("Skeleton Catacumba 3", "SKELETON_WARRIOR", 18, 34),
-        ("Skeleton Catacumba 4", "SKELETON_WARRIOR", 24, 39),
-        ("Zombie Ossuario 1", "ZOMBIE", 8, 44),
-        ("Skeleton Ossuario 2", "SKELETON_WARRIOR", 14, 49),
-        # Ruins
-        ("Goblin Ruinas Norte 1", "GOBLIN", 50, 27),
-        ("Skeleton Ruinas Norte 2", "SKELETON_WARRIOR", 57, 29),
-        ("Goblin Ruinas 1", "GOBLIN", 49, 34),
-        ("Zombie Ruinas 2", "ZOMBIE", 52, 40),
-        ("Goblin Ruinas 3", "GOBLIN", 60, 34),
-        ("Skeleton Ruinas 4", "SKELETON_WARRIOR", 65, 38),
-        ("Zombie Ruinas 5", "ZOMBIE", 58, 46),
-        ("Goblin Ruinas 6", "GOBLIN", 66, 47),
-        # Optional chamber
-        ("Skeleton Camara 1", "SKELETON_WARRIOR", 64, 25),
-        ("Zombie Camara 2", "ZOMBIE", 68, 27),
+        ("Skeleton Cripta 1", "SKELETON_WARRIOR", 36, 7),
+        ("Skeleton Cripta 2", "SKELETON_WARRIOR", 42, 11),
+        ("Skeleton Cripta 3", "SKELETON_WARRIOR", 48, 7),
+        ("Zombie Prisao 1", "ZOMBIE", 8, 11),
+        ("Skeleton Prisao 2", "SKELETON_WARRIOR", 14, 13),
+        ("Goblin Prisao 3", "GOBLIN", 20, 18),
+        ("Goblin Guarita 1", "GOBLIN", 9, 31),
+        ("Zombie Guarita 2", "ZOMBIE", 19, 35),
+        ("Goblin Salao 1", "GOBLIN", 34, 25),
+        ("Skeleton Salao 2", "SKELETON_WARRIOR", 42, 26),
+        ("Goblin Salao 3", "GOBLIN", 49, 31),
+        ("Zombie Salao 4", "ZOMBIE", 36, 34),
+        ("Goblin Armazem 1", "GOBLIN", 64, 9),
+        ("Goblin Armazem 2", "GOBLIN", 70, 12),
+        ("Zombie Armazem 3", "ZOMBIE", 76, 18),
+        ("Goblin Arsenal 1", "GOBLIN", 65, 30),
+        ("Skeleton Arsenal 2", "SKELETON_WARRIOR", 75, 34),
+        ("Skeleton Ruinas Oeste 1", "SKELETON_WARRIOR", 8, 46),
+        ("Zombie Ruinas Oeste 2", "ZOMBIE", 16, 49),
+        ("Goblin Ruinas Oeste 3", "GOBLIN", 24, 52),
+        ("Skeleton Catacumba 1", "SKELETON_WARRIOR", 36, 46),
+        ("Zombie Catacumba 2", "ZOMBIE", 48, 49),
+        ("Goblin Ruinas Sudeste 1", "GOBLIN", 64, 47),
+        ("Zombie Ruinas Sudeste 2", "ZOMBIE", 76, 51),
+        # Additional positions preserve the encounter density of the previous
+        # map while distributing it across the clearer room plan.
+        ("Skeleton Cripta 4", "SKELETON_WARRIOR", 38, 6),
+        ("Zombie Cripta 5", "ZOMBIE", 45, 7),
+        ("Goblin Prisao 4", "GOBLIN", 9, 17),
+        ("Zombie Prisao 5", "ZOMBIE", 17, 20),
+        ("Goblin Guarita 3", "GOBLIN", 11, 34),
+        ("Skeleton Salao 5", "SKELETON_WARRIOR", 46, 34),
+        ("Goblin Salao 6", "GOBLIN", 33, 28),
+        ("Goblin Armazem 4", "GOBLIN", 67, 15),
+        ("Zombie Armazem 5", "ZOMBIE", 73, 9),
+        ("Skeleton Arsenal 3", "SKELETON_WARRIOR", 68, 35),
+        ("Zombie Ruinas Oeste 4", "ZOMBIE", 20, 52),
+        ("Skeleton Catacumba 3", "SKELETON_WARRIOR", 44, 46),
     ]
 
     for name, enemy_type, x, y in enemy_positions:
@@ -428,18 +451,18 @@ def build_spawn_layers(
     # spawn compatible with that existing system; chest rarity expansion is a
     # separate gameplay feature and is intentionally outside this map redesign.
     chest_positions = [
-        ("Bau Capela", "COMMON", 18, 5),
-        ("Bau Cripta", "COMMON", 42, 5),
-        ("Bau Prisao Oeste", "COMMON", 5, 11),
-        ("Bau Prisao Leste", "COMMON", 23, 14),
-        ("Bau Armazem Norte", "COMMON", 66, 7),
-        ("Bau Armazem Sul", "COMMON", 64, 22),
-        ("Bau Catacumba Norte", "COMMON", 6, 38),
-        ("Bau Catacumba Leste", "COMMON", 24, 42),
-        ("Bau Ossuario", "COMMON", 7, 49),
-        ("Bau Ruinas Norte", "COMMON", 49, 25),
-        ("Bau Ruinas", "COMMON", 67, 33),
-        ("Bau Camara Opcional", "COMMON", 68, 24),
+        ("Bau Cripta", "COMMON", 48, 12),
+        ("Bau Prisao", "COMMON", 7, 19),
+        ("Bau Guarita", "COMMON", 20, 29),
+        ("Bau Salao", "COMMON", 50, 24),
+        ("Bau Armazem", "COMMON", 77, 8),
+        ("Bau Arsenal", "COMMON", 76, 28),
+        ("Bau Ruinas Oeste", "COMMON", 7, 52),
+        ("Bau Catacumba", "COMMON", 50, 52),
+        ("Bau Ruinas Sudeste", "COMMON", 76, 45),
+        ("Bau Guarita Sul", "COMMON", 22, 37),
+        ("Bau Salao Sul", "COMMON", 33, 35),
+        ("Bau Armazem Sul", "COMMON", 62, 20),
     ]
 
     for name, rarity, x, y in chest_positions:
@@ -459,12 +482,12 @@ def build_spawn_layers(
     # Invisible objective candidates. The runtime chooses exactly one only
     # when the ESCAPE phase starts; these points do not render keys in Tiled.
     key_positions = [
-        ("KeySpawn_01", 22, 8),
-        ("KeySpawn_02", 40, 12),
-        ("KeySpawn_03", 7, 18),
-        ("KeySpawn_04", 65, 15),
-        ("KeySpawn_05", 23, 40),
-        ("KeySpawn_06", 59, 44),
+        ("KeySpawn_01", 35, 12),
+        ("KeySpawn_02", 19, 10),
+        ("KeySpawn_03", 8, 36),
+        ("KeySpawn_04", 77, 19),
+        ("KeySpawn_05", 25, 45),
+        ("KeySpawn_06", 63, 52),
     ]
     for name, x, y in key_positions:
         assert (x, y) not in blocked, f"Key spawn blocked: {name}"
@@ -472,10 +495,9 @@ def build_spawn_layers(
         object_id += 1
 
     exit_positions = [
-        ("ExitGate_01", 17, 5),   # Noroeste / capela.
-        ("ExitGate_02", 67, 7),   # Nordeste / armazem.
-        ("ExitGate_03", 6, 49),   # Sudoeste / ossuario.
-        ("ExitGate_04", 66, 45),  # Sudeste / ruinas.
+        ("ExitGate_01", 42, 5),   # Norte / cripta.
+        ("ExitGate_02", 6, 49),   # Sudoeste / ruinas.
+        ("ExitGate_03", 77, 49),  # Sudeste / ruinas.
     ]
     for name, x, y in exit_positions:
         assert (x, y) not in blocked, f"Exit gate blocked: {name}"
@@ -496,7 +518,7 @@ def assert_reachable(
     blocked: set[tuple[int, int]],
     objects: list[dict[str, object]],
 ) -> None:
-    start = (36, 49)
+    start = (42, 51)
     traversable = walkable - blocked
     queue: deque[tuple[int, int]] = deque([start])
     visited = {start}
@@ -559,7 +581,10 @@ def build_map() -> dict[str, object]:
 
     floor = empty_grid()
     floor_details = empty_grid()
-    walls = empty_grid()
+    walls_back, walls_front, doors, door_frame_collision = build_architecture(
+        walkable,
+        wall_cells,
+    )
     wall_details = empty_grid()
     obstacles = empty_grid()
     decoration = empty_grid()
@@ -570,98 +595,50 @@ def build_map() -> dict[str, object]:
     for x, y in walkable:
         put(floor, x, y, FLOOR_GID)
     for x, y in wall_cells:
-        put(walls, x, y, WALL_GID)
+        put(collision, x, y, WALL_GID)
+        put(vision_blockers, x, y, WALL_GID)
+    for x, y in door_frame_collision:
         put(collision, x, y, WALL_GID)
         put(vision_blockers, x, y, WALL_GID)
 
     solid_objects: dict[tuple[int, int], int] = {}
 
-    # Supply clusters decorate the hall while preserving four readable lanes.
-    for x, y in ((30, 25), (41, 25), (30, 33), (41, 33)):
-        add_supply_cluster(solid_objects, x, y)
+    # The great hall is intentionally open. Four masonry pillars establish a
+    # symmetric centre aisle without turning it into a storage room.
+    for position in ((35, 25), (49, 25), (35, 33), (49, 33)):
+        solid_objects[position] = WALL_GID
 
-    # A compact fire shrine anchors the hub while leaving circulation on every
-    # side. Its collision also turns the landmark into useful combat cover.
-    for x, y in (
-        (35, 29), (36, 29), (37, 29),
-        (35, 30), (36, 30), (37, 30),
-        (35, 31), (36, 31), (37, 31),
-    ):
-        solid_objects[(x, y)] = WALL_GID
-
-    hub_crates = (
-        ((34, 28), 1),
-        ((38, 31), 0),
-        ((40, 24), 3),
-    )
-    for position, variant in hub_crates:
-        add_crate(solid_objects, *position, variant)
-
-    # Entrance props frame the room without closing its north, west or east
-    # exits, nor the clear space around PlayerSpawn_01.
-    add_crate(solid_objects, 31, 51, 1)
-    add_barrel(solid_objects, 40, 51)
-
-    # Crypt supply clusters and cover.
-    for start_x, y in ((29, 7), (37, 10), (18, 7)):
-        add_supply_cluster(solid_objects, start_x, y)
-    for index, (x, y) in enumerate(((32, 11), (40, 5))):
-        add_barrel(solid_objects, x, y, index)
-
-    # Prison cover reinforces narrow encounters without sealing the cell doors
-    # or either route back toward the hub and catacombs.
-    prison_positions = [
-        (5, 15), (7, 20), (11, 12), (12, 20),
-        (17, 14), (19, 20), (23, 16), (23, 22),
-    ]
-    for index, position in enumerate(prison_positions):
-        if index % 3 == 0:
-            add_barrel(solid_objects, *position, index)
-        else:
-            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
-
-    # Storage stacks leave several navigable lanes.
-    storage_positions = [
-        (54, 8), (56, 8), (59, 8), (62, 11), (65, 12), (54, 16),
-        (58, 17), (63, 17), (55, 23), (58, 25), (61, 23), (63, 26),
-    ]
-    for index, position in enumerate(storage_positions):
-        if index % 3 == 0:
-            add_barrel(solid_objects, *position, index)
-        else:
-            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
-
-    # The eastern depot and lower galleries use sparse cover to preserve their
-    # long loop while avoiding visually empty rectangular rooms.
-    eastern_positions = (
-        (76, 20), (80, 23), (78, 32),
-        (72, 42), (78, 46), (72, 49),
-    )
-    for index, position in enumerate(eastern_positions):
-        if index % 2 == 0:
-            add_crate(solid_objects, *position, 1 + ((index // 2) % 2) * 2)
-        else:
-            add_barrel(solid_objects, *position, index)
-
-    # Catacomb and ossuary obstacles.
-    for index, position in enumerate((
-        (7, 36), (13, 31), (18, 38), (23, 35), (9, 48), (15, 44),
-        (6, 30), (10, 39), (18, 42), (24, 33), (7, 43), (15, 49),
-    )):
+    # Crypt: a few offerings against the wall, never random warehouse clutter.
+    for index, position in enumerate(((34, 5), (49, 5), (34, 13), (49, 13))):
         add_barrel(solid_objects, *position, index)
 
-    # Broken ruins and scattered cover.
-    ruin_positions = (
-        (50, 34), (53, 44), (58, 37), (62, 38), (63, 44), (49, 46),
-        (48, 38), (52, 33), (56, 35), (61, 47), (60, 32), (67, 44),
-    )
-    for index, position in enumerate(ruin_positions):
-        if index in (1, 4, 8, 10):
-            add_supply_cluster(solid_objects, *position)
-        else:
-            # Narrow orientations fit the irregular ruin floor without
-            # spilling into its broken walls.
-            add_crate(solid_objects, *position, 1 + (index % 2) * 2)
+    # Prison and guard room: compact cover groups leave the middle lanes free.
+    for position, variant in (
+        ((6, 9), 1), ((7, 9), 1), ((20, 9), 3),
+        ((7, 29), 1), ((8, 29), 3), ((20, 36), 1),
+    ):
+        add_crate(solid_objects, *position, variant)
+    for index, position in enumerate(((6, 19), (20, 20), (19, 29))):
+        add_barrel(solid_objects, *position, index)
+
+    # Warehouse: grouped stacks along its perimeter form intentional aisles.
+    for position in ((62, 7), (66, 7), (74, 7), (62, 17), (72, 17)):
+        add_supply_cluster(solid_objects, *position)
+    for index, position in enumerate(((66, 18), (77, 12), (76, 19))):
+        add_barrel(solid_objects, *position, index)
+
+    # Arsenal and catacombs use sparse paired cover, preserving combat space.
+    for position, variant in (
+        ((63, 28), 1), ((64, 28), 3), ((76, 36), 1),
+        ((34, 44), 3), ((35, 44), 1), ((50, 44), 3),
+    ):
+        add_crate(solid_objects, *position, variant)
+
+    # Ruin debris hugs damaged outer edges and becomes sparser toward the room.
+    for position in ((6, 44), (21, 44), (62, 45), (73, 45)):
+        add_supply_cluster(solid_objects, *position)
+    for index, position in enumerate(((9, 46), (25, 46), (65, 47), (77, 47))):
+        add_barrel(solid_objects, *position, index)
 
     for (x, y), gid in solid_objects.items():
         assert (x, y) in walkable, f"Obstacle outside floor: {(x, y)}"
@@ -675,10 +652,10 @@ def build_map() -> dict[str, object]:
     # Connected strips remain a single catalog object, so future edits cannot
     # accidentally place an isolated crack fragment.
     for start_x, y in (
-        (29, 12),  # crypt
-        (56, 14),  # storage
-        (6, 37),   # catacombs
-        (58, 46),  # ruins
+        (38, 12),  # crypt
+        (8, 20),   # prisons
+        (10, 52),  # western ruins
+        (65, 52),  # southeastern ruins
     ):
         assert all((start_x + offset, y) in walkable for offset in range(8))
         place_prop(floor_details, "floor-crack-strip", start_x, y)
@@ -686,35 +663,21 @@ def build_map() -> dict[str, object]:
     # Small native floor marks give the entrance and hub a hand-built rhythm
     # without the artificial appearance of long repeated crack strips.
     floor_marks = [
-        # Central hall
-        (27, 24, 0), (33, 23, 1), (39, 23, 2), (44, 25, 3),
-        (27, 29, 2), (32, 30, 3), (40, 29, 0), (44, 34, 1),
-        (27, 36, 3), (33, 36, 0), (39, 35, 1), (45, 37, 2),
-        # Entrance / spawn
-        (31, 47, 2), (34, 48, 0), (38, 47, 3), (41, 49, 1),
-        (32, 52, 1), (36, 51, 3), (39, 52, 0),
-        # Crypt and chapel
-        (18, 5, 0), (22, 7, 2), (28, 4, 1), (33, 6, 3),
-        (39, 8, 0), (43, 12, 2), (30, 11, 1),
-        # Prisons
-        (5, 12, 3), (7, 17, 0), (11, 14, 2), (13, 21, 1),
-        (17, 16, 0), (20, 14, 3), (22, 19, 1),
-        # Storage wings
-        (53, 7, 1), (57, 10, 3), (61, 7, 0), (66, 14, 2),
-        (54, 18, 3), (59, 16, 1), (63, 19, 0),
-        (54, 22, 2), (58, 24, 0), (62, 26, 3), (65, 23, 1),
-        # Catacombs and ossuary
-        (5, 31, 2), (10, 30, 0), (13, 37, 3), (7, 39, 1),
-        (18, 33, 1), (20, 38, 2), (24, 41, 0),
-        (6, 44, 3), (11, 47, 1), (15, 43, 2),
-        # Ruins and optional chamber
-        (49, 25, 0), (54, 27, 2), (58, 29, 3),
-        (48, 33, 1), (51, 39, 3), (56, 46, 0), (60, 36, 2),
-        (63, 43, 1), (67, 48, 3), (64, 24, 2), (68, 27, 0),
-        # Eastern depot and return galleries
-        (75, 18, 1), (79, 21, 3), (81, 25, 0),
-        (72, 31, 2), (77, 34, 1), (80, 30, 3),
-        (71, 39, 0), (76, 43, 2), (80, 48, 1), (74, 51, 3),
+        # Central hall and its four approaches
+        (33, 23, 0), (39, 24, 1), (45, 23, 2), (51, 27, 3),
+        (33, 30, 2), (42, 30, 3), (48, 34, 0), (41, 38, 1),
+        # Crypt and prisons
+        (35, 6, 1), (40, 8, 3), (46, 6, 0), (48, 13, 2),
+        (7, 10, 3), (11, 15, 0), (17, 12, 2), (20, 19, 1),
+        # Western guard room and ruins
+        (8, 32, 1), (14, 29, 3), (20, 34, 0),
+        (7, 47, 2), (13, 50, 0), (20, 46, 3), (25, 52, 1),
+        # Warehouse and arsenal
+        (63, 12, 2), (69, 8, 0), (74, 15, 3), (77, 10, 1),
+        (64, 33, 1), (70, 29, 2), (76, 35, 0),
+        # Catacombs and southeastern ruins
+        (35, 48, 3), (41, 45, 1), (48, 51, 2),
+        (63, 49, 0), (69, 46, 2), (75, 52, 1),
     ]
     for x, y, mark_index in floor_marks:
         if (
@@ -726,30 +689,20 @@ def build_map() -> dict[str, object]:
 
     # Region-specific decoration.
     decorative_objects = [
-        # entrance supplies and small accents
-        (30, 47, VASE_VARIANTS[0]), (41, 47, VASE_VARIANTS[2]),
-        (39, 50, VASE_VARIANTS[1]),
-        # central hall edge dressing leaves its combat lanes open
-        (29, 23, VASE_VARIANTS[3]), (45, 23, VASE_VARIANTS[0]),
-        (43, 36, VASE_VARIANTS[4]),
-        # prison debris and sparse valuables
-        (12, 13, VASE_VARIANTS[4]), (22, 14, GOLD_VARIANTS[2]),
-        # storage pottery, loose gold and supplies
-        (53, 12, VASE_VARIANTS[0]), (57, 13, VASE_VARIANTS[2]), (64, 9, VASE_VARIANTS[3]),
-        (60, 22, VASE_VARIANTS[1]), (65, 27, VASE_VARIANTS[4]),
-        (55, 18, GOLD_VARIANTS[2]), (61, 12, GOLD_VARIANTS[6]), (63, 24, GOLD_VARIANTS[0]),
-        # crystals and rubble accents in ruins
-        (49, 39, CRYSTAL_VARIANTS[0]), (61, 35, CRYSTAL_VARIANTS[1]),
-        (54, 34, CRYSTAL_VARIANTS[1]),
-        (50, 47, GOLD_VARIANTS[3]), (64, 47, GOLD_VARIANTS[1]),
-        # optional chamber reward dressing
-        (66, 25, VASE_VARIANTS[0]), (69, 25, GOLD_VARIANTS[6]),
-        # eastern depot and lower return loop
-        (75, 23, VASE_VARIANTS[3]),
-        (80, 25, GOLD_VARIANTS[6]),
-        (77, 34, VASE_VARIANTS[4]), (74, 39, CRYSTAL_VARIANTS[0]),
-        (75, 48, GOLD_VARIANTS[5]),
-        (79, 50, VASE_VARIANTS[1]),
+        # Crypt offerings and prison belongings stay close to walls.
+        (36, 5, VASE_VARIANTS[0]), (47, 5, VASE_VARIANTS[2]),
+        (45, 13, GOLD_VARIANTS[6]),
+        (6, 16, VASE_VARIANTS[4]), (21, 12, VASE_VARIANTS[3]),
+        # Hall accents preserve the central combat aisle.
+        (32, 23, VASE_VARIANTS[1]), (51, 34, VASE_VARIANTS[2]),
+        # Warehouse valuables remain beside grouped supplies.
+        (63, 19, VASE_VARIANTS[0]), (75, 17, VASE_VARIANTS[3]),
+        (68, 19, GOLD_VARIANTS[2]), (75, 10, GOLD_VARIANTS[6]),
+        # Ruin fragments form short trails away from damaged edges.
+        (10, 45, CRYSTAL_VARIANTS[0]), (12, 46, CRYSTAL_VARIANTS[1]),
+        (22, 46, GOLD_VARIANTS[3]),
+        (66, 47, CRYSTAL_VARIANTS[0]), (68, 48, CRYSTAL_VARIANTS[1]),
+        (74, 47, GOLD_VARIANTS[5]),
     ]
     decoration_cells: set[tuple[int, int]] = set()
     for x, y, prop_key in decorative_objects:
@@ -767,32 +720,37 @@ def build_map() -> dict[str, object]:
     # Wall torches use the neighboring collision cell as their anchor so the
     # flame is mounted on masonry and the halo extends into the room.
     wall_torches = (
-        # salao central e cripta
-        (31, 21), (51, 21), (29, 38),
-        (30, 2), (39, 2), (48, 2), (17, 4), (50, 5),
-        # prisoes e passagens oeste
-        (4, 9), (14, 9), (3, 17), (15, 15), (15, 25),
-        # armazens e galerias do leste
-        (60, 3), (74, 3), (79, 13), (82, 27), (65, 30),
-        # ruinas, catacumbas e santuario inferior
-        (1, 34), (3, 47), (18, 55), (28, 42),
-        (44, 56), (58, 49), (60, 54), (82, 40), (71, 54),
+        # important entrances and symmetric hall anchors
+        (33, 21), (50, 21), (30, 25), (53, 33),
+        (35, 3), (48, 3),
+        # western rooms
+        (7, 7), (21, 7), (5, 30), (23, 35),
+        (7, 42), (25, 42),
+        # eastern rooms
+        (63, 5), (77, 5), (61, 34), (79, 35),
+        (63, 43), (77, 43),
+        # southern catacombs
+        (35, 42), (51, 42),
     )
     for x, y in wall_torches:
         assert (x, y) in wall_cells, f"Torch is not mounted on a wall: {(x, y)}"
         place_fire(lighting, x, y)
 
-    # The central fire is a brazier on a solid shrine, not a wall torch.
-    place_fire(lighting, 36, 30)
+    # The central fire is a freestanding brazier and visual focal point.
+    place_fire(lighting, 42, 29)
 
-    blocked = wall_cells | set(solid_objects)
+    blocked = wall_cells | door_frame_collision | set(solid_objects)
     spawn_layers = build_spawn_layers(blocked)
     all_spawn_objects = [
         obj
         for objects in spawn_layers.values()
         for obj in objects
     ]
-    assert_reachable(walkable, set(solid_objects), all_spawn_objects)
+    assert_reachable(
+        walkable,
+        set(solid_objects) | door_frame_collision,
+        all_spawn_objects,
+    )
 
     region_objects = []
     next_region_id = len(all_spawn_objects) + 1
@@ -824,15 +782,17 @@ def build_map() -> dict[str, object]:
         "tileheight": TILE_SIZE,
         "infinite": False,
         "backgroundcolor": "#08090d",
-        "nextlayerid": 16,
+        "nextlayerid": 18,
         "nextobjectid": next_region_id,
         "layers": [
             tile_layer(1, "Floor", floor),
             tile_layer(2, "FloorDetails", floor_details),
-            tile_layer(3, "Walls", walls),
+            tile_layer(3, "WallsBack", walls_back),
             tile_layer(4, "WallDetails", wall_details),
+            tile_layer(16, "Doors", doors),
             tile_layer(5, "Obstacles", obstacles),
             tile_layer(6, "Decoration", decoration),
+            tile_layer(17, "WallsFront", walls_front),
             tile_layer(7, "Lighting", lighting),
             tile_layer(8, "Collision", collision, visible=False),
             tile_layer(

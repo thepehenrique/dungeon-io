@@ -25,11 +25,13 @@ export const DUNGEON_TILESETS = [
 ] as const;
 
 export const DUNGEON_RENDER_LAYERS = [
-  'Floor',
-  'FloorDetails',
-  'Walls',
-  'WallDetails',
-  'Obstacles',
-  'Decoration',
-  'Lighting',
+  { name: 'Floor', depth: 0 },
+  { name: 'FloorDetails', depth: 1 },
+  { name: 'WallsBack', depth: 2 },
+  { name: 'WallDetails', depth: 3 },
+  { name: 'Obstacles', depth: 6 },
+  { name: 'Decoration', depth: 7 },
+  { name: 'Doors', depth: 12 },
+  { name: 'WallsFront', depth: 20 },
+  { name: 'Lighting', depth: 30 },
 ] as const;

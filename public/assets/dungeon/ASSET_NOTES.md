@@ -10,16 +10,23 @@ https://craftpix.net/file-licenses/
 
 The original PSD files, promotional images and coupons are intentionally not included.
 The `dungeon-01.tmj` file is an original, finite 84×58 exploration map built with
-the pack's floor, wall, object, crack and fire tiles. It contains 28 named regions,
-multiple routes and loops, collision-aware obstacles, enemy/chest spawn points and
-a hidden `Regions` object layer to make navigation inside Tiled easier.
+the pack's floor, wall, object, crack and fire tiles. It contains nine deliberate
+architectural regions, multiple routes and loops, collision-aware obstacles,
+enemy/chest spawn points and a hidden `Regions` object layer to make navigation
+inside Tiled easier.
 
-Its structural layout is organized around a large central hall with crypt and
-chapel rooms to the north, prison blocks to the west, storage rooms and a depot to
-the east, open ruins to the southwest, and catacombs, sanctuaries and return
-galleries to the south. Negative spaces and architectural thresholds split the
-broad regional bounds into L-shaped rooms, optional chambers, narrow connectors
-and alternate loops instead of a single continuous rectangle.
+Its structural layout is organized around a large central hall with a crypt to
+the north, prisons and a guard room to the west, warehouse and arsenal rooms to
+the east, ruins in both lower wings and catacombs to the south. Rooms are kept
+apart by true negative space and connected by consistent three/five-tile
+corridors. The west, east and southern branches form alternate loops instead of
+one continuous floor mass.
+
+Walls use separate `WallsBack` and `WallsFront` layers. North/side edges establish
+the room outline, while south walls add a ledge plus two rows of vertical face.
+Open arches are stamped into selected north/south thresholds and keep only their
+stone uprights collidable. See `ARCHITECTURE_GUIDE.md` for verified local tile IDs
+and the exact Tiled construction pattern.
 
 The tilesets are embedded in the `.tmj`; this project does not use external `.tsx`
 files. Original PNG files remain unchanged.

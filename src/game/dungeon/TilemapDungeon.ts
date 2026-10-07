@@ -54,16 +54,16 @@ export class TilemapDungeon {
       return tileset;
     });
 
-    for (const [depth, layerName] of DUNGEON_RENDER_LAYERS.entries()) {
-      const layer = map.createLayer(layerName, tilesets, 0, 0);
+    for (const layerDefinition of DUNGEON_RENDER_LAYERS) {
+      const layer = map.createLayer(layerDefinition.name, tilesets, 0, 0);
 
       if (!layer) {
-        throw new Error(`Dungeon layer ${layerName} is missing.`);
+        throw new Error(`Dungeon layer ${layerDefinition.name} is missing.`);
       }
 
-      layer.setScale(DUNGEON_MAP.scale).setDepth(depth);
+      layer.setScale(DUNGEON_MAP.scale).setDepth(layerDefinition.depth);
 
-      if (layerName === DUNGEON_MAP.lightingLayer) {
+      if (layerDefinition.name === DUNGEON_MAP.lightingLayer) {
         layer.setBlendMode(Phaser.BlendModes.ADD);
       } else {
         layer.setTint(DUNGEON_MAP.ambientTint);
