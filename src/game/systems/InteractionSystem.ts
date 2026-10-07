@@ -1,19 +1,25 @@
 import Phaser from 'phaser';
 
 import { DROP_CONFIG } from '../config/drops';
+import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 import { ITEM_RARITY_PRESENTATION } from '../config/itemRarities';
 import type { Chest } from '../items/chests/Chest';
 import type { ChestManager } from '../items/chests/ChestManager';
 import { formatItemDetails } from '../items/itemPresentation';
 import type { WorldItem } from '../items/world/WorldItem';
 import type { Player } from '../player/Player';
+import type { DungeonKey } from '../objectives/DungeonKey';
+import type { ExitDoor } from '../objectives/ExitDoor';
 import { ItemType } from '../types/item';
 import type { DropSystem } from './DropSystem';
 import type { InventorySystem } from './InventorySystem';
+import type { RunObjectiveSystem } from './RunObjectiveSystem';
 
 type InteractionTarget =
   | { readonly type: 'ITEM'; readonly item: WorldItem }
-  | { readonly type: 'CHEST'; readonly chest: Chest };
+  | { readonly type: 'CHEST'; readonly chest: Chest }
+  | { readonly type: 'DUNGEON_KEY'; readonly key: DungeonKey }
+  | { readonly type: 'EXIT_DOOR'; readonly door: ExitDoor };
 
 export interface InteractionFeedback {
   readonly x: number;
@@ -32,6 +38,7 @@ export class InteractionSystem {
     private readonly inventory: InventorySystem,
     private readonly drops: DropSystem,
     private readonly chests: ChestManager,
+    private readonly objectives: RunObjectiveSystem,
     private readonly onChestOpened: (chest: Chest) => void,
     private readonly onFeedback: (feedback: InteractionFeedback) => void,
   ) {
@@ -58,7 +65,10 @@ export class InteractionSystem {
       return;
     }
 
-    const rangeSquared = DROP_CONFIG.interactionRange ** 2;
+    const rangeSquared = Math.max(
+      DROP_CONFIG.interactionRange,
+      RUN_OBJECTIVE_CONFIG.interactionRange,
+    ) ** 2;
     let nearest: InteractionTarget | null = null;
     let nearestDistance = rangeSquared;
 
@@ -94,6 +104,34 @@ export class InteractionSystem {
       }
     }
 
+    const key = this.objectives.key;
+
+    if (key) {
+      const distance = Phaser.Math.Distance.Squared(
+        this.player.x,
+        this.player.y,
+        key.x,
+        key.y,
+      );
+
+      if (distance < nearestDistance) {
+        nearest = { type: 'DUNGEON_KEY', key };
+        nearestDistance = distance;
+      }
+    }
+
+    const door = this.objectives.exitDoor;
+    const exitDistance = Phaser.Math.Distance.Squared(
+      this.player.x,
+      this.player.y,
+      door.x,
+      door.y,
+    );
+
+    if (exitDistance < nearestDistance) {
+      nearest = { type: 'EXIT_DOOR', door };
+    }
+
     this.select(nearest);
 
     if (nearest?.type === 'ITEM') {
@@ -106,6 +144,10 @@ export class InteractionSystem {
         nearest.chest.x,
         nearest.chest.y - DROP_CONFIG.promptOffsetY,
       );
+    } else if (nearest?.type === 'DUNGEON_KEY') {
+      this.prompt.setPosition(nearest.key.x, nearest.key.y - 34);
+    } else if (nearest?.type === 'EXIT_DOOR') {
+      this.prompt.setPosition(nearest.door.x, nearest.door.y - 86);
     }
   }
 
@@ -120,6 +162,28 @@ export class InteractionSystem {
       if (target.chest.open()) {
         this.onChestOpened(target.chest);
       }
+      this.select(null);
+      return;
+    }
+
+    if (target.type === 'DUNGEON_KEY') {
+      this.select(null);
+      this.objectives.collectKey();
+      return;
+    }
+
+    if (target.type === 'EXIT_DOOR') {
+      const result = this.objectives.interactWithExit();
+
+      if (result === 'LOCKED') {
+        this.onFeedback({
+          x: target.door.x,
+          y: target.door.y - 45,
+          message: 'Você precisa encontrar a chave.',
+          color: '#ed7777',
+        });
+      }
+
       this.select(null);
       return;
     }
@@ -196,6 +260,10 @@ export class InteractionSystem {
       this.selected.item.setSelected(false);
     } else if (this.selected?.type === 'CHEST') {
       this.selected.chest.setSelected(false);
+    } else if (this.selected?.type === 'DUNGEON_KEY') {
+      this.selected.key.setSelected(false);
+    } else if (this.selected?.type === 'EXIT_DOOR') {
+      this.selected.door.setSelected(false);
     }
 
     this.selected = target;
@@ -220,6 +288,28 @@ export class InteractionSystem {
       return;
     }
 
+    if (target.type === 'DUNGEON_KEY') {
+      target.key.setSelected(true);
+      this.prompt
+        .setText('Chave da Masmorra\n\n[E] Pegar')
+        .setColor('#f5c451')
+        .setVisible(true);
+      return;
+    }
+
+    if (target.type === 'EXIT_DOOR') {
+      target.door.setSelected(true);
+      this.prompt
+        .setText(
+          !this.objectives.hasKey
+            ? 'PORTA DE SAÍDA\nTrancada\n\nVocê precisa encontrar a chave.'
+            : 'PORTA DE SAÍDA\n\n[E] Abrir porta',
+        )
+        .setColor('#e6c87a')
+        .setVisible(true);
+      return;
+    }
+
     target.chest.setSelected(true);
     this.prompt
       .setText(`${target.chest.label}\n\n[E] Abrir`)
@@ -238,6 +328,14 @@ function sameTarget(
 
   if (first.type === 'ITEM' && second.type === 'ITEM') {
     return first.item === second.item;
+  }
+
+  if (first.type === 'DUNGEON_KEY' && second.type === 'DUNGEON_KEY') {
+    return first.key === second.key;
+  }
+
+  if (first.type === 'EXIT_DOOR' && second.type === 'EXIT_DOOR') {
+    return first.door === second.door;
   }
 
   return first.type === 'CHEST' && second.type === 'CHEST'

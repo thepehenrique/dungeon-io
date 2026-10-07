@@ -3,6 +3,15 @@ import type { PlayerClass } from './player';
 
 export enum RunEndReason {
   Defeated = 'DEFEATED',
+  Collapsed = 'COLLAPSED',
+  Escaped = 'ESCAPED',
+}
+
+export enum RunPhase {
+  Preparation = 'PREPARATION',
+  Escape = 'ESCAPE',
+  Escaped = 'ESCAPED',
+  GameOver = 'GAME_OVER',
 }
 
 export interface RunState {
@@ -19,4 +28,8 @@ export interface RunState {
   gold: number;
   inventory: InventoryState;
   elapsedSeconds: number;
+  gameplayElapsedMs: number;
+  remainingTimeMs: number;
+  phase: RunPhase;
+  hasDungeonKey: boolean;
 }

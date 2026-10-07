@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../../constants/game';
 import type { PlayerClassDefinition } from '../../types/player';
 import type { RunState } from '../../types/run';
+import { RunEndReason } from '../../types/run';
 
 export interface GameOverActions {
   readonly restart: () => void;
@@ -20,6 +21,9 @@ export class GameOverPanel {
     actions: GameOverActions,
   ) {
     this.root = scene.add.container(0, 0);
+    const escaped = run.endReason === RunEndReason.Escaped;
+    const accentColor = escaped ? 0x63c985 : 0xc54f4f;
+    const resultTitle = getResultTitle(run);
 
     const background = scene.add.grid(
       GAME_WIDTH / 2,
@@ -44,17 +48,17 @@ export class GameOverPanel {
     const panel = scene.add
       .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 840, 570, 0x0c1118, 0.97)
       .setStrokeStyle(2, 0x4a3035);
-    const accent = scene.add.rectangle(GAME_WIDTH / 2, 81, 840, 5, 0xc54f4f);
+    const accent = scene.add.rectangle(GAME_WIDTH / 2, 81, 840, 5, accentColor);
     const title = scene.add
-      .text(GAME_WIDTH / 2, 132, 'GAME OVER', {
+      .text(GAME_WIDTH / 2, 132, resultTitle, {
         fontFamily: 'Georgia, serif',
-        fontSize: '64px',
+        fontSize: resultTitle === 'GAME OVER' ? '64px' : '48px',
         fontStyle: 'bold',
-        color: '#d25d62',
+        color: escaped ? '#78d99a' : '#d25d62',
       })
       .setOrigin(0.5);
     const subtitle = scene.add
-      .text(GAME_WIDTH / 2, 190, 'Sua jornada chegou ao fim.', {
+      .text(GAME_WIDTH / 2, 190, getResultMessage(run), {
         fontFamily: 'Arial, sans-serif',
         fontSize: '17px',
         color: '#8995a4',
@@ -70,9 +74,18 @@ export class GameOverPanel {
       .setOrigin(0.5);
 
     this.root.add([background, veil, panel, accent, title, subtitle, identity]);
-    this.createStatCard(scene, 440, 340, 'NÍVEL', String(run.level));
-    this.createStatCard(scene, 640, 340, 'INIMIGOS', String(run.kills));
-    this.createStatCard(scene, 840, 340, 'TEMPO', formatDuration(run.elapsedSeconds));
+    this.createStatCard(scene, 355, 340, 'NÍVEL', String(run.level));
+    this.createStatCard(scene, 545, 340, 'INIMIGOS', String(run.kills));
+    this.createStatCard(scene, 735, 340, 'OURO', String(run.gold));
+    this.createStatCard(
+      scene,
+      925,
+      340,
+      escaped ? 'TEMPO RESTANTE' : 'TEMPO',
+      escaped
+        ? formatDuration(Math.ceil(run.remainingTimeMs / 1000))
+        : formatDuration(run.elapsedSeconds),
+    );
     this.createButton(scene, 505, 500, 'JOGAR NOVAMENTE', actions.restart);
     this.createButton(scene, 775, 500, 'VOLTAR AO MENU', actions.returnToMenu);
 
@@ -155,6 +168,30 @@ export class GameOverPanel {
 
     this.root.add(button);
   }
+}
+
+function getResultTitle(run: RunState): string {
+  if (run.endReason === RunEndReason.Escaped) {
+    return 'VOCÊ ESCAPOU DA MASMORRA';
+  }
+
+  if (run.endReason === RunEndReason.Collapsed) {
+    return 'A MASMORRA DESMORONOU';
+  }
+
+  return 'GAME OVER';
+}
+
+function getResultMessage(run: RunState): string {
+  if (run.endReason === RunEndReason.Escaped) {
+    return 'Você escapou da masmorra com vida.';
+  }
+
+  if (run.endReason === RunEndReason.Collapsed) {
+    return 'A masmorra desmoronou.';
+  }
+
+  return 'Você morreu.';
 }
 
 function formatDuration(elapsedSeconds: number): string {

@@ -14,7 +14,8 @@ interface TiledProperty {
   readonly value: unknown;
 }
 
-interface MapPoint {
+export interface MapPoint {
+  readonly id: string;
   readonly x: number;
   readonly y: number;
 }
@@ -23,9 +24,11 @@ export class TilemapDungeon {
   readonly walls: Phaser.Physics.Arcade.StaticGroup;
 
   private map: Phaser.Tilemaps.Tilemap | null = null;
-  private playerSpawn: MapPoint = { x: 800, y: 608 };
+  private playerSpawns: MapPoint[] = [];
   private enemySpawns: EnemySpawnDefinition[] = [];
   private chestSpawns: ChestSpawnDefinition[] = [];
+  private keySpawns: MapPoint[] = [];
+  private exitSpawns: MapPoint[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     this.walls = scene.physics.add.staticGroup();
@@ -79,8 +82,8 @@ export class TilemapDungeon {
     return this.requireMap().heightInPixels * DUNGEON_MAP.scale;
   }
 
-  getPlayerSpawn(): MapPoint {
-    return this.playerSpawn;
+  getPlayerSpawns(): readonly MapPoint[] {
+    return this.playerSpawns;
   }
 
   getEnemySpawns(): readonly EnemySpawnDefinition[] {
@@ -89,6 +92,14 @@ export class TilemapDungeon {
 
   getChestSpawns(): readonly ChestSpawnDefinition[] {
     return this.chestSpawns;
+  }
+
+  getKeySpawns(): readonly MapPoint[] {
+    return this.keySpawns;
+  }
+
+  getExitSpawns(): readonly MapPoint[] {
+    return this.exitSpawns;
   }
 
   private createCollisionBodies(layer: Phaser.Tilemaps.TilemapLayer): void {
@@ -146,18 +157,27 @@ export class TilemapDungeon {
       throw new Error('One or more dungeon spawn layers are missing.');
     }
 
-    const initialPlayerSpawn = playerLayer.objects[0];
-
-    if (!initialPlayerSpawn) {
+    if (playerLayer.objects.length === 0) {
       throw new Error('Dungeon player spawn layer is empty.');
     }
 
-    this.playerSpawn = {
-      x: (initialPlayerSpawn.x ?? 0) * DUNGEON_MAP.scale,
-      y: (initialPlayerSpawn.y ?? 0) * DUNGEON_MAP.scale,
-    };
+    this.playerSpawns = playerLayer.objects.map((object, index) => ({
+      id: object.name || `PlayerSpawn_${index + 1}`,
+      x: (object.x ?? 0) * DUNGEON_MAP.scale,
+      y: (object.y ?? 0) * DUNGEON_MAP.scale,
+    }));
     this.enemySpawns = [];
     this.chestSpawns = [];
+    this.keySpawns = keyLayer.objects.map((object, index) => ({
+      id: object.name || `KeySpawn_${index + 1}`,
+      x: (object.x ?? 0) * DUNGEON_MAP.scale,
+      y: (object.y ?? 0) * DUNGEON_MAP.scale,
+    }));
+    this.exitSpawns = exitGateLayer.objects.map((object, index) => ({
+      id: object.name || `ExitSpawn_${index + 1}`,
+      x: (object.x ?? 0) * DUNGEON_MAP.scale,
+      y: (object.y ?? 0) * DUNGEON_MAP.scale,
+    }));
 
     for (const object of enemyLayer.objects) {
       const x = (object.x ?? 0) * DUNGEON_MAP.scale;

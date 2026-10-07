@@ -36,6 +36,7 @@ import {
   preloadWarriorSprites,
 } from '../player/warriorAnimations';
 import { createProjectilePlaceholderTextures } from '../projectiles/projectileTextures';
+import { createObjectiveTextures } from '../objectives/objectiveTextures';
 import { GameSession } from '../state/GameSession';
 
 export class BootScene extends Phaser.Scene {
@@ -72,6 +73,7 @@ export class BootScene extends Phaser.Scene {
     createMageAnimations(this);
     createWarriorAnimations(this);
     createProjectilePlaceholderTextures(this);
+    createObjectiveTextures(this);
     this.registry.set(REGISTRY_KEYS.GAME_SESSION, new GameSession());
     this.scene.start(SCENE_KEYS.MENU);
   }

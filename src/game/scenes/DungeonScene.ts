@@ -3,14 +3,16 @@ import Phaser from 'phaser';
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
 import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
+import { HUD_LAYOUT } from '../config/hud';
 import { PLAYER_CLASSES } from '../config/playerClasses';
 import { PROGRESSION_CONFIG } from '../config/progression';
+import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 import {
   GAME_HEIGHT,
   GAME_WIDTH,
   SCENE_KEYS,
 } from '../constants/game';
-import { TilemapDungeon } from '../dungeon/TilemapDungeon';
+import { TilemapDungeon, type MapPoint } from '../dungeon/TilemapDungeon';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { ChestManager } from '../items/chests/ChestManager';
@@ -25,6 +27,8 @@ import { InteractionSystem } from '../systems/InteractionSystem';
 import { InventorySystem } from '../systems/InventorySystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { QuickSlotSystem } from '../systems/QuickSlotSystem';
+import { RunObjectiveSystem } from '../systems/RunObjectiveSystem';
+import { RunTimerSystem } from '../systems/RunTimerSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import {
   AttackKind,
@@ -51,6 +55,9 @@ export class DungeonScene extends Phaser.Scene {
   private equipmentSystem: EquipmentSystem | null = null;
   private quickSlotSystem: QuickSlotSystem | null = null;
   private interactionSystem: InteractionSystem | null = null;
+  private runObjectiveSystem: RunObjectiveSystem | null = null;
+  private runTimerSystem: RunTimerSystem | null = null;
+  private runAnnouncementText: Phaser.GameObjects.Text | null = null;
   private inventoryView: InventoryView | null = null;
   private inventoryKey: Phaser.Input.Keyboard.Key | null = null;
   private readonly upgradeSystem = new UpgradeSystem();
@@ -79,7 +86,10 @@ export class DungeonScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, dungeon.width, dungeon.height);
     this.cameras.main.setBounds(0, 0, dungeon.width, dungeon.height);
 
-    const playerSpawn = dungeon.getPlayerSpawn();
+    const playerSpawn = selectPlayerSpawn(
+      dungeon.getPlayerSpawns(),
+      dungeon.getEnemySpawns(),
+    );
 
     const player = new Player(this, playerSpawn.x, playerSpawn.y, {
       id: run.playerId,
@@ -132,8 +142,7 @@ export class DungeonScene extends Phaser.Scene {
             return;
           }
 
-          session.finishRun(RunEndReason.Defeated);
-          this.gameOverPending = true;
+          this.endRun(RunEndReason.Defeated);
         }
       },
       (target, result, request) => {
@@ -152,6 +161,35 @@ export class DungeonScene extends Phaser.Scene {
     this.inventorySystem = new InventorySystem(run.inventory);
     this.equipmentSystem = new EquipmentSystem(player, this.inventorySystem);
     this.quickSlotSystem = new QuickSlotSystem(this.inventorySystem, player);
+    this.runObjectiveSystem = new RunObjectiveSystem(
+      this,
+      run,
+      playerSpawn,
+      dungeon.getKeySpawns(),
+      dungeon.getExitSpawns(),
+      {
+        onKeyCollected: () => {
+          this.hud?.update();
+          this.showRunAnnouncement('CHAVE ENCONTRADA', 'Encontre a saída.');
+        },
+        onEscaped: () => this.endRun(RunEndReason.Escaped),
+      },
+    );
+    this.runTimerSystem = new RunTimerSystem(run, {
+      onEscapeStarted: () => {
+        this.runObjectiveSystem?.beginEscapePhase();
+        this.hud?.update();
+        this.showRunAnnouncement(
+          'SAIA DA MASMORRA',
+          'Encontre a chave e procure a saída.',
+        );
+      },
+      onTimeExpired: () => {
+        this.cameras.main.shake(650, 0.018);
+        this.cameras.main.flash(350, 120, 82, 54);
+        this.endRun(RunEndReason.Collapsed);
+      },
+    });
     const chestManager = new ChestManager(
       this,
       player,
@@ -163,6 +201,7 @@ export class DungeonScene extends Phaser.Scene {
       this.inventorySystem,
       this.dropSystem,
       chestManager,
+      this.runObjectiveSystem,
       (chest) => {
         const tableId = CHEST_DROP_TABLES[chest.rarity];
 
@@ -197,16 +236,21 @@ export class DungeonScene extends Phaser.Scene {
       dungeon.getEnemySpawns(),
     );
     this.waveCountdownText = this.add
-      .text(GAME_WIDTH / 2, 42, '', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '22px',
-        fontStyle: 'bold',
-        color: '#f4d17a',
-        stroke: '#080c12',
-        strokeThickness: 5,
-        backgroundColor: '#080c12cc',
-        padding: { x: 14, y: 8 },
-      })
+      .text(
+        GAME_WIDTH / 2,
+        HUD_LAYOUT.topMargin + HUD_LAYOUT.height + 12,
+        '',
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color: '#f4d17a',
+          stroke: '#080c12',
+          strokeThickness: 5,
+          backgroundColor: '#080c12cc',
+          padding: { x: 14, y: 8 },
+        },
+      )
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(500)
@@ -272,6 +316,8 @@ export class DungeonScene extends Phaser.Scene {
       this.levelUpView?.destroy();
       this.inventoryView?.destroy();
       this.interactionSystem?.destroy();
+      this.runObjectiveSystem?.destroy();
+      this.runAnnouncementText?.destroy();
       this.dropSystem?.destroy();
       this.playerController?.destroy();
       this.playerController = null;
@@ -286,6 +332,9 @@ export class DungeonScene extends Phaser.Scene {
       this.equipmentSystem = null;
       this.quickSlotSystem = null;
       this.interactionSystem = null;
+      this.runObjectiveSystem = null;
+      this.runTimerSystem = null;
+      this.runAnnouncementText = null;
       this.inventoryView = null;
       this.inventoryKey = null;
       this.levelUpView = null;
@@ -321,6 +370,14 @@ export class DungeonScene extends Phaser.Scene {
       if (this.isInventoryOpen) {
         this.playerController?.discardActionPresses();
       }
+      return;
+    }
+
+    this.runTimerSystem?.update(delta);
+    this.hud?.update();
+
+    if (this.gameOverPending) {
+      this.scene.start(SCENE_KEYS.GAME_OVER);
       return;
     }
 
@@ -432,6 +489,50 @@ export class DungeonScene extends Phaser.Scene {
       ease: 'Quad.Out',
       onComplete: () => text.destroy(),
     });
+  }
+
+  private showRunAnnouncement(title: string, subtitle: string): void {
+    this.runAnnouncementText?.destroy();
+    const text = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT * 0.3, `${title}\n${subtitle}`, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '34px',
+        fontStyle: 'bold',
+        align: 'center',
+        color: '#f4d17a',
+        stroke: '#080a0d',
+        strokeThickness: 7,
+        backgroundColor: '#080c12dd',
+        padding: { x: 28, y: 18 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(700);
+    this.runAnnouncementText = text;
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: text.y - 28,
+      delay: RUN_OBJECTIVE_CONFIG.announcementDurationMs,
+      duration: 450,
+      onComplete: () => {
+        if (this.runAnnouncementText === text) {
+          this.runAnnouncementText = null;
+        }
+        text.destroy();
+      },
+    });
+  }
+
+  private endRun(reason: RunEndReason): void {
+    if (this.gameOverPending) {
+      return;
+    }
+
+    this.runTimerSystem?.stop();
+    getGameSession(this).finishRun(reason);
+    this.gameOverPending = true;
   }
 
   private queueLevelUp(level: number): void {
@@ -588,5 +689,27 @@ export class DungeonScene extends Phaser.Scene {
     this.tweens.resumeAll();
     this.isChoosingUpgrade = false;
   }
+}
 
+function selectPlayerSpawn(
+  spawns: readonly MapPoint[],
+  enemySpawns: readonly { readonly x: number; readonly y: number }[],
+): MapPoint {
+  if (spawns.length === 0) {
+    throw new Error('The dungeon requires at least one PlayerSpawns point.');
+  }
+
+  const safeSpawns = spawns.filter((spawn) =>
+    enemySpawns.every((enemy) =>
+      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y) > 96 ** 2,
+    ),
+  );
+  const candidates = safeSpawns.length > 0 ? safeSpawns : spawns;
+  const selected = candidates[Math.floor(Math.random() * candidates.length)];
+
+  if (!selected) {
+    throw new Error('Unable to choose a player spawn.');
+  }
+
+  return selected;
 }

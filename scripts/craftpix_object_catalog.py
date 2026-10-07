@@ -66,12 +66,6 @@ CRAFTPIX_PROPS: dict[str, CraftPixProp] = {
 
     # Floor decoration. Several props straddle atlas cell boundaries even
     # though their visible pixels are small, so every occupied cell is listed.
-    "bones-left": CraftPixProp(
-        "Objects", OBJECTS_FIRST_GID, _rows((113,),), "left"
-    ),
-    "bones-right": CraftPixProp(
-        "Objects", OBJECTS_FIRST_GID, _rows((114,),), "right"
-    ),
     "vase-blue-large": CraftPixProp(
         "Objects", OBJECTS_FIRST_GID, _rows((133,), (157,)), "front"
     ),

@@ -1,6 +1,7 @@
 import { createInitialInventoryState } from '../config/inventory';
+import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 import type { PlayerClass } from '../types/player';
-import { RunEndReason, type RunState } from '../types/run';
+import { RunEndReason, RunPhase, type RunState } from '../types/run';
 
 export class GameSession {
   private currentRun: RunState | null = null;
@@ -20,6 +21,10 @@ export class GameSession {
       gold: 0,
       inventory: createInitialInventoryState(),
       elapsedSeconds: 0,
+      gameplayElapsedMs: 0,
+      remainingTimeMs: RUN_OBJECTIVE_CONFIG.totalDurationMs,
+      phase: RunPhase.Preparation,
+      hasDungeonKey: false,
     };
 
     return this.currentRun;
@@ -31,8 +36,11 @@ export class GameSession {
       this.currentRun.endedAt = endedAt;
       this.currentRun.endReason = reason;
       this.currentRun.elapsedSeconds = Math.floor(
-        (endedAt - this.currentRun.startedAt) / 1000,
+        this.currentRun.gameplayElapsedMs / 1000,
       );
+      this.currentRun.phase = reason === RunEndReason.Escaped
+        ? RunPhase.Escaped
+        : RunPhase.GameOver;
     }
 
     return this.currentRun;

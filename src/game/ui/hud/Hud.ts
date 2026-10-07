@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 
 import { HUD_COLORS, HUD_LAYOUT } from '../../config/hud';
+import { RUN_OBJECTIVE_CONFIG } from '../../config/runObjective';
 import { getItemDefinition } from '../../items/ItemRegistry';
 import type { ClassAbilityController } from '../../player/ClassAbilityController';
 import type { Player } from '../../player/Player';
 import type { InventorySystem } from '../../systems/InventorySystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
 import type { PlayerClassDefinition } from '../../types/player';
-import type { RunState } from '../../types/run';
+import { RunPhase, type RunState } from '../../types/run';
 import { HudBar } from './HudBar';
 import { HudQuickSlot } from './HudQuickSlot';
 
@@ -22,6 +23,9 @@ export class Hud {
   private readonly levelText: Phaser.GameObjects.Text;
   private readonly killsText: Phaser.GameObjects.Text;
   private readonly goldText: Phaser.GameObjects.Text;
+  private readonly timeText: Phaser.GameObjects.Text;
+  private readonly keyText: Phaser.GameObjects.Text;
+  private readonly objectiveText: Phaser.GameObjects.Text;
   private readonly quickSlots: readonly HudQuickSlot[];
   private readonly classAbilityText: Phaser.GameObjects.Text;
   private readonly healthBar: HudBar;
@@ -35,6 +39,7 @@ export class Hud {
   private lastGold = Number.NaN;
   private lastQuickSlotSignature = '';
   private lastAbilityText = '';
+  private lastObjectiveSignature = '';
 
   constructor(
     scene: Phaser.Scene,
@@ -99,6 +104,28 @@ export class Hud {
         color: '#e6c87a',
       })
       .setOrigin(1, 0);
+    this.timeText = scene.add.text(HUD_LAYOUT.padding, HUD_LAYOUT.timerY, '', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '13px',
+      fontStyle: 'bold',
+      color: HUD_COLORS.primaryText,
+    });
+    this.keyText = scene.add
+      .text(HUD_LAYOUT.width - HUD_LAYOUT.padding, HUD_LAYOUT.timerY, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '13px',
+        fontStyle: 'bold',
+        color: '#e6c87a',
+      })
+      .setOrigin(1, 0);
+    this.objectiveText = scene.add
+      .text(HUD_LAYOUT.width / 2, HUD_LAYOUT.objectiveY, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '12px',
+        fontStyle: 'bold',
+        color: HUD_COLORS.secondaryText,
+      })
+      .setOrigin(0.5, 0);
 
     this.topContainer.add([
       panel,
@@ -108,6 +135,9 @@ export class Hud {
       this.levelText,
       this.killsText,
       this.goldText,
+      this.timeText,
+      this.keyText,
+      this.objectiveText,
     ]);
     this.healthBar = new HudBar(
       scene,
@@ -187,6 +217,11 @@ export class Hud {
       })
       .join('|');
     const abilityText = this.classAbility.hudText;
+    const objectiveSignature = [
+      this.run.phase,
+      this.run.hasDungeonKey,
+      Math.ceil(this.run.remainingTimeMs / 1000),
+    ].join('|');
 
     if (
       this.player.stats.health !== this.lastHealth ||
@@ -243,6 +278,25 @@ export class Hud {
       this.lastAbilityText = abilityText;
       this.classAbilityText.setText(abilityText);
     }
+
+    if (objectiveSignature !== this.lastObjectiveSignature) {
+      this.lastObjectiveSignature = objectiveSignature;
+      const urgent =
+        this.run.remainingTimeMs <= RUN_OBJECTIVE_CONFIG.urgentTimeThresholdMs;
+      this.timeText
+        .setText(`TEMPO ${formatRemainingTime(this.run.remainingTimeMs)}`)
+        .setColor(
+          urgent
+            ? '#ff6b62'
+            : this.run.phase === RunPhase.Escape
+              ? '#f4d17a'
+              : '#f4f5f7',
+        );
+      this.keyText.setText(
+        this.run.hasDungeonKey ? 'CHAVE: ENCONTRADA' : 'CHAVE: —',
+      );
+      this.objectiveText.setText(getObjectiveText(this.run));
+    }
   }
 
   destroy(): void {
@@ -289,4 +343,27 @@ export class Hud {
           HUD_LAYOUT.quickSlots.height * actionScale,
       );
   }
+}
+
+function getObjectiveText(run: RunState): string {
+  if (run.phase === RunPhase.Preparation) {
+    return 'Objetivo: Sobreviva e fique mais forte.';
+  }
+
+  if (run.phase === RunPhase.Escape && !run.hasDungeonKey) {
+    return 'Objetivo: Encontre a chave.';
+  }
+
+  if (run.phase === RunPhase.Escape) {
+    return 'Objetivo: Encontre a saída.';
+  }
+
+  return '';
+}
+
+function formatRemainingTime(remainingMs: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }

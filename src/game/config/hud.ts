@@ -1,6 +1,6 @@
 export const HUD_LAYOUT = {
   width: 540,
-  height: 126,
+  height: 174,
   padding: 16,
   topMargin: 16,
   sideMargin: 16,
@@ -10,6 +10,8 @@ export const HUD_LAYOUT = {
   healthY: 55,
   experienceY: 82,
   statsY: 105,
+  timerY: 128,
+  objectiveY: 150,
   quickSlots: {
     bottom: 20,
     width: 122,
