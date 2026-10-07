@@ -9,6 +9,7 @@ import type { ClassAbilityController } from '../../player/ClassAbilityController
 import type { Player } from '../../player/Player';
 import type { InventorySystem } from '../../systems/InventorySystem';
 import { getRequiredExperience } from '../../systems/ProgressionSystem';
+import { ItemType } from '../../types/item';
 import type { PlayerClassDefinition } from '../../types/player';
 import type { RunState } from '../../types/run';
 import { HudBar } from './HudBar';
@@ -227,11 +228,11 @@ export class Hud {
           : null;
         this.quickSlots[index].update(
           definition
-            ? formatQuickSlotContent(
-                definition.name,
-                this.inventory.getQuantity(definition.id),
-              )
+            ? `x${this.inventory.getQuantity(definition.id)}`
             : '—',
+          definition?.type === ItemType.Consumable
+            ? definition.textureKey
+            : null,
         );
       }
     }
@@ -290,11 +291,6 @@ export class Hud {
           HUD_LAYOUT.actionHeight * actionScale,
       );
   }
-}
-
-function formatQuickSlotContent(name: string, quantity: number): string {
-  const compactName = name.replace(/^Poção de /, '');
-  return `${compactName}\nx${quantity}`;
 }
 
 function formatRemainingTime(remainingMs: number): string {

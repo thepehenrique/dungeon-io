@@ -478,6 +478,7 @@ legend {
 }
 
 .inventory-slot {
+  position: relative;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
@@ -486,6 +487,17 @@ legend {
   border: 1px solid #303740;
   background: #10141a;
   text-align: left;
+  padding-right: 48px;
+}
+
+.inventory-item-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+  transform: translateY(-50%);
 }
 
 .inventory-slot:hover,
@@ -529,6 +541,14 @@ legend {
   margin: 0 0 7px;
   font-family: Georgia, serif;
   font-size: 18px;
+}
+
+.inventory-details__icon {
+  float: right;
+  width: 48px;
+  height: 48px;
+  margin: 0 0 10px 12px;
+  image-rendering: pixelated;
 }
 
 .inventory-details__content > p,
@@ -590,12 +610,18 @@ legend {
 .inventory-quick-slot {
   display: grid;
   min-height: 56px;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 32px 1fr auto auto;
   align-items: center;
   gap: 10px;
   border: 1px solid #303740;
   padding: 9px 11px;
   background: #10141a;
+}
+
+.inventory-quick-slot__icon {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
 }
 
 .inventory-quick-slot span {

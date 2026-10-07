@@ -85,6 +85,7 @@ export interface ConsumableDefinition extends ItemDefinition {
   readonly stackLimit: number;
   readonly color: string;
   readonly textureKey: string;
+  readonly assetPath: string;
   readonly pickupRadius: number;
 }
 

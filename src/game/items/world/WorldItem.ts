@@ -14,7 +14,6 @@ export class WorldItem extends Phaser.GameObjects.Container {
   readonly definition: RegisteredItemDefinition;
   readonly quantity: number;
   readonly despawnTimeMs: number | null = null;
-  private readonly halo: Phaser.GameObjects.Arc;
 
   constructor(
     scene: Phaser.Scene,
@@ -34,14 +33,13 @@ export class WorldItem extends Phaser.GameObjects.Container {
     const rarityColor = Phaser.Display.Color.HexStringToColor(
       ITEM_RARITY_PRESENTATION[definition.rarity].color,
     ).color;
-    this.halo = scene.add
-      .circle(0, 0, 20, rarityColor, 0.14)
-      .setStrokeStyle(2, rarityColor, 0.9);
-    const icon = scene.add
-      .image(0, 0, getTextureKey(definition.type))
-      .setTint(rarityColor);
+    const icon = scene.add.image(0, 0, getTextureKey(definition));
 
-    this.add([this.halo, icon]);
+    if (definition.type !== ItemType.Consumable) {
+      icon.setTint(rarityColor);
+    }
+
+    this.add(icon);
     this.setSize(42, 42).setDepth(8);
     scene.add.existing(this);
     scene.tweens.add({
@@ -61,18 +59,18 @@ export class WorldItem extends Phaser.GameObjects.Container {
     };
   }
 
-  setSelected(selected: boolean): void {
-    this.halo.setAlpha(selected ? 1 : 0.45);
-    this.halo.setScale(selected ? 1.12 : 1);
+  setSelected(_selected: boolean): void {
+    // Selection is communicated by the interaction prompt; world drops keep
+    // their original sprite silhouette without an artificial rarity circle.
   }
 }
 
-function getTextureKey(type: ItemType): string {
-  switch (type) {
+function getTextureKey(definition: RegisteredItemDefinition): string {
+  switch (definition.type) {
     case ItemType.Equipment:
       return WORLD_ITEM_TEXTURE_KEYS.equipment;
     case ItemType.Consumable:
-      return WORLD_ITEM_TEXTURE_KEYS.consumable;
+      return definition.textureKey;
     case ItemType.Backpack:
       return WORLD_ITEM_TEXTURE_KEYS.backpack;
   }

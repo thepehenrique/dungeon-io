@@ -5,6 +5,7 @@ import { UI_ASSETS } from '../../config/uiAssets';
 
 export class HudQuickSlot {
   private readonly contentText: Phaser.GameObjects.Text;
+  private readonly icon: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,8 +27,11 @@ export class HudQuickSlot {
       stroke: '#080a0d',
       strokeThickness: 2,
     });
+    this.icon = scene.add
+      .image(x + width / 2, y + height / 2 - 2, '__WHITE')
+      .setVisible(false);
     this.contentText = scene.add
-      .text(x + width / 2, y + 38, '', {
+      .text(x + width / 2, y + 45, '', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '9px',
         fontStyle: 'bold',
@@ -40,10 +44,19 @@ export class HudQuickSlot {
       })
       .setOrigin(0.5);
 
-    container.add([background, keyText, this.contentText]);
+    container.add([background, this.icon, keyText, this.contentText]);
   }
 
-  update(content: string): void {
+  update(content: string, textureKey: string | null = null): void {
+    if (textureKey) {
+      this.icon
+        .setTexture(textureKey)
+        .setDisplaySize(28, 28)
+        .setVisible(true);
+    } else {
+      this.icon.setVisible(false);
+    }
+
     if (this.contentText.text !== content) {
       this.contentText.setText(content);
     }

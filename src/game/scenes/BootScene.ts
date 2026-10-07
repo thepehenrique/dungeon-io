@@ -21,7 +21,7 @@ import {
   createChestAnimations,
   preloadChestSprites,
 } from '../items/chests/chestAnimations';
-import { createConsumablePlaceholderTextures } from '../items/consumables/consumableTextures';
+import { preloadConsumableTextures } from '../items/consumables/consumableTextures';
 import { createWorldItemPlaceholderTextures } from '../items/world/worldItemTextures';
 import {
   createArcherAnimations,
@@ -54,6 +54,7 @@ export class BootScene extends Phaser.Scene {
     preloadSkeletonSprites(this);
     preloadZombieSprites(this);
     preloadChestSprites(this);
+    preloadConsumableTextures(this);
 
     for (const asset of PHASER_UI_ASSETS) {
       this.load.image(asset.key, asset.path);
@@ -66,7 +67,6 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     createChestAnimations(this);
-    createConsumablePlaceholderTextures(this);
     createWorldItemPlaceholderTextures(this);
     createDungeonPlaceholderTextures(this);
     createEnemyPlaceholderTextures(this);

@@ -4,7 +4,6 @@ import { WORLD_ITEM_TEXTURE_KEYS } from '../../config/drops';
 
 export function createWorldItemPlaceholderTextures(scene: Phaser.Scene): void {
   createEquipmentTexture(scene);
-  createConsumableTexture(scene);
   createBackpackTexture(scene);
   createGoldTexture(scene);
 }
@@ -22,21 +21,6 @@ function createEquipmentTexture(scene: Phaser.Scene): void {
   graphics.lineStyle(3, 0xffffff, 1);
   graphics.lineBetween(8, 17, 15, 24);
   graphics.generateTexture(WORLD_ITEM_TEXTURE_KEYS.equipment, 32, 32);
-  graphics.destroy();
-}
-
-function createConsumableTexture(scene: Phaser.Scene): void {
-  if (scene.textures.exists(WORLD_ITEM_TEXTURE_KEYS.consumable)) {
-    return;
-  }
-
-  const graphics = scene.make.graphics({ x: 0, y: 0 }, false);
-  graphics.fillStyle(0xffffff, 1);
-  graphics.fillRect(10, 2, 8, 6);
-  graphics.fillRoundedRect(5, 7, 18, 21, 6);
-  graphics.fillStyle(0x17212d, 1);
-  graphics.fillCircle(14, 18, 5);
-  graphics.generateTexture(WORLD_ITEM_TEXTURE_KEYS.consumable, 28, 30);
   graphics.destroy();
 }
 

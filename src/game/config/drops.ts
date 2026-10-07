@@ -114,7 +114,6 @@ export const DROP_CONFIG = {
 
 export const WORLD_ITEM_TEXTURE_KEYS = {
   equipment: 'world-item-equipment',
-  consumable: 'world-item-consumable',
   backpack: 'world-item-backpack',
   gold: 'world-item-gold',
 } as const;

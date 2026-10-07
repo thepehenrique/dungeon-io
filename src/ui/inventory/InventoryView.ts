@@ -70,6 +70,7 @@ export class InventoryView {
       const quantity = definition.type === ItemType.Consumable
         ? `<small>x${slot.quantity}</small>`
         : '';
+      const icon = renderConsumableIcon(definition, 'inventory-item-icon');
 
       return `
         <button
@@ -78,6 +79,7 @@ export class InventoryView {
           data-inventory-index="${index}"
           style="--item-color: ${rarity.color}"
         >
+          ${icon}
           <strong>${escapeHtml(definition.name)}</strong>
           ${quantity}
           <em>${rarity.label}</em>
@@ -112,10 +114,14 @@ export class InventoryView {
       const quantity = definitionId
         ? this.inventory.getQuantity(definitionId)
         : 0;
+      const icon = definition
+        ? renderConsumableIcon(definition, 'inventory-quick-slot__icon')
+        : '<div class="inventory-quick-slot__icon" aria-hidden="true"></div>';
 
       return `
         <div class="inventory-quick-slot">
           <span>[${index + 1}]</span>
+          ${icon}
           <strong>${definition ? escapeHtml(definition.name) : 'Vazio'}</strong>
           ${definition ? `<small>x${quantity}</small>` : ''}
           ${definition ? `<button type="button" data-clear-quick-index="${index}">Remover</button>` : ''}
@@ -212,6 +218,7 @@ export class InventoryView {
     }
 
     return `
+      ${renderConsumableIcon(definition, 'inventory-details__icon')}
       <h4 style="color: ${rarity.color}">${escapeHtml(definition.name)}</h4>
       <strong class="inventory-rarity" style="color: ${rarity.color}">${rarity.label.toUpperCase()}</strong>
       ${typeDetail}
@@ -344,6 +351,15 @@ export class InventoryView {
     const slot = this.inventory.getSlot(this.selectedIndex);
     return slot ? this.inventory.getDefinition(slot) : null;
   }
+}
+
+function renderConsumableIcon(
+  definition: RegisteredItemDefinition,
+  className: string,
+): string {
+  return definition.type === ItemType.Consumable
+    ? `<img class="${className}" src="${escapeHtml(definition.assetPath)}" alt="" />`
+    : '';
 }
 
 function escapeHtml(value: string): string {
