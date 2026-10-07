@@ -20,6 +20,13 @@ export interface MapPoint {
   readonly y: number;
 }
 
+export interface VisionBlocker {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export class TilemapDungeon {
   readonly walls: Phaser.Physics.Arcade.StaticGroup;
 
@@ -29,6 +36,7 @@ export class TilemapDungeon {
   private chestSpawns: ChestSpawnDefinition[] = [];
   private keySpawns: MapPoint[] = [];
   private exitSpawns: MapPoint[] = [];
+  private visionBlockers: VisionBlocker[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     this.walls = scene.physics.add.staticGroup();
@@ -70,6 +78,20 @@ export class TilemapDungeon {
 
     collisionLayer.setScale(DUNGEON_MAP.scale).setVisible(false);
     this.createCollisionBodies(collisionLayer);
+
+    const visionLayer = map.createLayer(
+      DUNGEON_MAP.visionBlockingLayer,
+      tilesets,
+      0,
+      0,
+    );
+
+    if (!visionLayer) {
+      throw new Error('Dungeon vision blocking layer is missing.');
+    }
+
+    visionLayer.setScale(DUNGEON_MAP.scale).setVisible(false);
+    this.visionBlockers = this.readBlockerRectangles(visionLayer, true);
     this.readSpawnPoints(map);
     this.map = map;
   }
@@ -102,8 +124,35 @@ export class TilemapDungeon {
     return this.exitSpawns;
   }
 
+  getVisionBlockers(): readonly VisionBlocker[] {
+    return this.visionBlockers;
+  }
+
   private createCollisionBodies(layer: Phaser.Tilemaps.TilemapLayer): void {
-    const worldTileSize = layer.layer.tileWidth * DUNGEON_MAP.scale;
+    for (const blocker of this.readBlockerRectangles(layer)) {
+      const body = this.scene.add
+        .rectangle(
+          blocker.x + blocker.width / 2,
+          blocker.y + blocker.height / 2,
+          blocker.width,
+          blocker.height,
+          0x000000,
+          0,
+        )
+        .setVisible(false);
+
+      this.scene.physics.add.existing(body, true);
+      this.walls.add(body);
+    }
+  }
+
+  private readBlockerRectangles(
+    layer: Phaser.Tilemaps.TilemapLayer,
+    mergeVertically = false,
+  ): VisionBlocker[] {
+    const worldTileWidth = layer.layer.tileWidth * DUNGEON_MAP.scale;
+    const worldTileHeight = layer.layer.tileHeight * DUNGEON_MAP.scale;
+    const blockers: VisionBlocker[] = [];
 
     for (let y = 0; y < layer.layer.height; y += 1) {
       const row = layer.layer.data[y];
@@ -122,22 +171,17 @@ export class TilemapDungeon {
         }
 
         const runLength = x - runStart;
-        const body = this.scene.add
-          .rectangle(
-            (runStart + runLength / 2) * worldTileSize,
-            (y + 0.5) * worldTileSize,
-            runLength * worldTileSize,
-            worldTileSize,
-            0x000000,
-            0,
-          )
-          .setVisible(false);
-
-        this.scene.physics.add.existing(body, true);
-        this.walls.add(body);
+        blockers.push({
+          x: runStart * worldTileWidth,
+          y: y * worldTileHeight,
+          width: runLength * worldTileWidth,
+          height: worldTileHeight,
+        });
         runStart = -1;
       }
     }
+
+    return mergeVertically ? mergeVerticalBlockers(blockers) : blockers;
   }
 
   private readSpawnPoints(map: Phaser.Tilemaps.Tilemap): void {
@@ -227,4 +271,36 @@ export class TilemapDungeon {
 
     return this.map;
   }
+}
+
+function mergeVerticalBlockers(
+  rowBlockers: readonly VisionBlocker[],
+): VisionBlocker[] {
+  const merged: VisionBlocker[] = [];
+  const latestBySpan = new Map<string, number>();
+
+  for (const blocker of rowBlockers) {
+    const spanKey = `${blocker.x}:${blocker.width}`;
+    const previousIndex = latestBySpan.get(spanKey);
+    const previous = previousIndex !== undefined
+      ? merged[previousIndex]
+      : undefined;
+
+    if (
+      previousIndex !== undefined &&
+      previous &&
+      previous.y + previous.height === blocker.y
+    ) {
+      merged[previousIndex] = {
+        ...previous,
+        height: previous.height + blocker.height,
+      };
+      continue;
+    }
+
+    latestBySpan.set(spanKey, merged.length);
+    merged.push(blocker);
+  }
+
+  return merged;
 }

@@ -30,6 +30,7 @@ import { QuickSlotSystem } from '../systems/QuickSlotSystem';
 import { RunObjectiveSystem } from '../systems/RunObjectiveSystem';
 import { RunTimerSystem } from '../systems/RunTimerSystem';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
+import { VisionSystem } from '../systems/VisionSystem';
 import {
   AttackKind,
   type Damageable,
@@ -57,6 +58,7 @@ export class DungeonScene extends Phaser.Scene {
   private interactionSystem: InteractionSystem | null = null;
   private runObjectiveSystem: RunObjectiveSystem | null = null;
   private runTimerSystem: RunTimerSystem | null = null;
+  private visionSystem: VisionSystem | null = null;
   private runAnnouncementText: Phaser.GameObjects.Text | null = null;
   private inventoryView: InventoryView | null = null;
   private inventoryKey: Phaser.Input.Keyboard.Key | null = null;
@@ -97,6 +99,13 @@ export class DungeonScene extends Phaser.Scene {
       playerClass: run.playerClass,
     });
     this.player = player;
+    this.visionSystem = new VisionSystem(
+      this,
+      player,
+      dungeon.getVisionBlockers(),
+      dungeon.width,
+      dungeon.height,
+    );
     this.progressionSystem = new ProgressionSystem(run, (newLevel) => {
       this.queueLevelUp(newLevel);
     });
@@ -202,6 +211,7 @@ export class DungeonScene extends Phaser.Scene {
       this.dropSystem,
       chestManager,
       this.runObjectiveSystem,
+      (x, y) => this.visionSystem?.hasLineOfSight(x, y) ?? false,
       (chest) => {
         const tableId = CHEST_DROP_TABLES[chest.rarity];
 
@@ -317,6 +327,7 @@ export class DungeonScene extends Phaser.Scene {
       this.levelUpView?.destroy();
       this.inventoryView?.destroy();
       this.interactionSystem?.destroy();
+      this.visionSystem?.destroy();
       this.runObjectiveSystem?.destroy();
       this.runAnnouncementText?.destroy();
       this.dropSystem?.destroy();
@@ -335,6 +346,7 @@ export class DungeonScene extends Phaser.Scene {
       this.interactionSystem = null;
       this.runObjectiveSystem = null;
       this.runTimerSystem = null;
+      this.visionSystem = null;
       this.runAnnouncementText = null;
       this.inventoryView = null;
       this.inventoryKey = null;
@@ -358,9 +370,10 @@ export class DungeonScene extends Phaser.Scene {
       this.toggleInventory();
     }
 
-    this.interactionSystem?.update(
-      !this.isChoosingUpgrade && !this.isInventoryOpen && !this.gameOverPending,
-    );
+    const actionEnabled =
+      !this.isChoosingUpgrade && !this.isInventoryOpen && !this.gameOverPending;
+    this.visionSystem?.update(delta, actionEnabled);
+    this.interactionSystem?.update(actionEnabled);
 
     if (this.gameOverPending) {
       this.scene.start(SCENE_KEYS.GAME_OVER);

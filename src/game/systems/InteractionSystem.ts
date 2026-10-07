@@ -39,6 +39,7 @@ export class InteractionSystem {
     private readonly drops: DropSystem,
     private readonly chests: ChestManager,
     private readonly objectives: RunObjectiveSystem,
+    private readonly hasLineOfSight: (x: number, y: number) => boolean,
     private readonly onChestOpened: (chest: Chest) => void,
     private readonly onFeedback: (feedback: InteractionFeedback) => void,
   ) {
@@ -80,7 +81,10 @@ export class InteractionSystem {
         item.y,
       );
 
-      if (distance <= nearestDistance) {
+      if (
+        distance <= nearestDistance &&
+        this.hasLineOfSight(item.x, item.y)
+      ) {
         nearest = { type: 'ITEM', item };
         nearestDistance = distance;
       }
@@ -98,7 +102,10 @@ export class InteractionSystem {
         chest.y,
       );
 
-      if (distance < nearestDistance) {
+      if (
+        distance < nearestDistance &&
+        this.hasLineOfSight(chest.x, chest.y)
+      ) {
         nearest = { type: 'CHEST', chest };
         nearestDistance = distance;
       }
@@ -114,7 +121,10 @@ export class InteractionSystem {
         key.y,
       );
 
-      if (distance < nearestDistance) {
+      if (
+        distance < nearestDistance &&
+        this.hasLineOfSight(key.x, key.y)
+      ) {
         nearest = { type: 'DUNGEON_KEY', key };
         nearestDistance = distance;
       }
@@ -128,7 +138,10 @@ export class InteractionSystem {
       door.y,
     );
 
-    if (exitDistance < nearestDistance) {
+    if (
+      exitDistance < nearestDistance &&
+      this.hasLineOfSight(door.x, door.y)
+    ) {
       nearest = { type: 'EXIT_DOOR', door };
     }
 

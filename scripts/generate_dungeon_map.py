@@ -53,6 +53,19 @@ GOLD_VARIANTS = (
 )
 CRYSTAL_VARIANTS = ("crystal-small", "crystal-large")
 
+# Only tall/wide cover occludes sight. Narrow crates and the current barrel
+# sprites remain physical obstacles, but are low cover and do not cast long
+# triangular fog shadows across the room.
+VISION_BLOCKING_PROP_KEYS = (
+    "crate-light-wide",
+    "crate-dark-wide",
+)
+VISION_BLOCKING_PROP_GIDS = {
+    gid
+    for prop_key in VISION_BLOCKING_PROP_KEYS
+    for _, _, gid in prop_cells(prop_key, 0, 0)
+}
+
 
 def empty_grid() -> list[list[int]]:
     return [[0 for _ in range(WIDTH)] for _ in range(HEIGHT)]
@@ -279,8 +292,8 @@ def add_crate(
     add_prop(objects, CRATE_VARIANTS[variant % len(CRATE_VARIANTS)], x, y)
 
 
-def add_tomb(objects: dict[tuple[int, int], int], x: int, y: int) -> None:
-    add_prop(objects, "tomb-stone", x, y)
+def add_supply_cluster(objects: dict[tuple[int, int], int], x: int, y: int) -> None:
+    add_prop(objects, "supply-cluster", x, y)
 
 
 def place_prop(grid: list[list[int]], prop_key: str, x: int, y: int) -> None:
@@ -446,7 +459,7 @@ def build_spawn_layers(
     # Invisible objective candidates. The runtime chooses exactly one only
     # when the ESCAPE phase starts; these points do not render keys in Tiled.
     key_positions = [
-        ("KeySpawn_01", 20, 8),
+        ("KeySpawn_01", 22, 8),
         ("KeySpawn_02", 40, 12),
         ("KeySpawn_03", 7, 18),
         ("KeySpawn_04", 65, 15),
@@ -512,8 +525,15 @@ def assert_reachable(
         assert center in visited, f"Unreachable room: {name}"
 
 
-def tile_layer(layer_id: int, name: str, grid: list[list[int]], visible: bool = True) -> dict[str, object]:
-    return {
+def tile_layer(
+    layer_id: int,
+    name: str,
+    grid: list[list[int]],
+    visible: bool = True,
+    *,
+    blocks_vision: bool = False,
+) -> dict[str, object]:
+    layer: dict[str, object] = {
         "id": layer_id,
         "name": name,
         "type": "tilelayer",
@@ -525,6 +545,11 @@ def tile_layer(layer_id: int, name: str, grid: list[list[int]], visible: bool = 
         "visible": visible,
         "data": flatten(grid),
     }
+    if blocks_vision:
+        layer["properties"] = [
+            {"name": "blocksVision", "type": "bool", "value": True}
+        ]
+    return layer
 
 
 def build_map() -> dict[str, object]:
@@ -540,19 +565,20 @@ def build_map() -> dict[str, object]:
     decoration = empty_grid()
     lighting = empty_grid()
     collision = empty_grid()
+    vision_blockers = empty_grid()
 
     for x, y in walkable:
         put(floor, x, y, FLOOR_GID)
     for x, y in wall_cells:
         put(walls, x, y, WALL_GID)
         put(collision, x, y, WALL_GID)
+        put(vision_blockers, x, y, WALL_GID)
 
     solid_objects: dict[tuple[int, int], int] = {}
 
-    # Central hall: paired stone-column tiles create real pillars and four
-    # readable lanes through the room instead of placeholder barrels.
+    # Supply clusters decorate the hall while preserving four readable lanes.
     for x, y in ((30, 25), (41, 25), (30, 33), (41, 33)):
-        add_prop(solid_objects, "stone-column", x, y)
+        add_supply_cluster(solid_objects, x, y)
 
     # A compact fire shrine anchors the hub while leaving circulation on every
     # side. Its collision also turns the landmark into useful combat cover.
@@ -566,7 +592,6 @@ def build_map() -> dict[str, object]:
     hub_crates = (
         ((34, 28), 1),
         ((38, 31), 0),
-        ((32, 34), 2),
         ((40, 24), 3),
     )
     for position, variant in hub_crates:
@@ -577,9 +602,9 @@ def build_map() -> dict[str, object]:
     add_crate(solid_objects, 31, 51, 1)
     add_barrel(solid_objects, 40, 51)
 
-    # Crypt tombs and cover.
+    # Crypt supply clusters and cover.
     for start_x, y in ((29, 7), (37, 10), (18, 7)):
-        add_tomb(solid_objects, start_x, y)
+        add_supply_cluster(solid_objects, start_x, y)
     for index, (x, y) in enumerate(((32, 11), (40, 5))):
         add_barrel(solid_objects, x, y, index)
 
@@ -627,12 +652,12 @@ def build_map() -> dict[str, object]:
 
     # Broken ruins and scattered cover.
     ruin_positions = (
-        (50, 34), (53, 44), (58, 37), (62, 38), (64, 44), (49, 46),
-        (48, 38), (52, 33), (57, 35), (61, 47), (60, 32), (67, 44),
+        (50, 34), (53, 44), (58, 37), (62, 38), (63, 44), (49, 46),
+        (48, 38), (52, 33), (56, 35), (61, 47), (60, 32), (67, 44),
     )
     for index, position in enumerate(ruin_positions):
         if index in (1, 4, 8, 10):
-            add_prop(solid_objects, "stone-column", *position)
+            add_supply_cluster(solid_objects, *position)
         else:
             # Narrow orientations fit the irregular ruin floor without
             # spilling into its broken walls.
@@ -642,6 +667,10 @@ def build_map() -> dict[str, object]:
         assert (x, y) in walkable, f"Obstacle outside floor: {(x, y)}"
         put(obstacles, x, y, gid, catalogued_prop=True)
         put(collision, x, y, WALL_GID)
+        # Vision remains independent from collision: low cover still blocks
+        # movement, while only explicitly selected large props occlude sight.
+        if gid == WALL_GID or gid in VISION_BLOCKING_PROP_GIDS:
+            put(vision_blockers, x, y, WALL_GID)
 
     # Connected strips remain a single catalog object, so future edits cannot
     # accidentally place an isolated crack fragment.
@@ -711,7 +740,7 @@ def build_map() -> dict[str, object]:
         (55, 18, GOLD_VARIANTS[2]), (61, 12, GOLD_VARIANTS[6]), (63, 24, GOLD_VARIANTS[0]),
         # crystals and rubble accents in ruins
         (49, 39, CRYSTAL_VARIANTS[0]), (61, 35, CRYSTAL_VARIANTS[1]),
-        (54, 34, CRYSTAL_VARIANTS[1]), (66, 43, CRYSTAL_VARIANTS[0]),
+        (54, 34, CRYSTAL_VARIANTS[1]),
         (50, 47, GOLD_VARIANTS[3]), (64, 47, GOLD_VARIANTS[1]),
         # optional chamber reward dressing
         (66, 25, VASE_VARIANTS[0]), (69, 25, GOLD_VARIANTS[6]),
@@ -795,7 +824,7 @@ def build_map() -> dict[str, object]:
         "tileheight": TILE_SIZE,
         "infinite": False,
         "backgroundcolor": "#08090d",
-        "nextlayerid": 15,
+        "nextlayerid": 16,
         "nextobjectid": next_region_id,
         "layers": [
             tile_layer(1, "Floor", floor),
@@ -806,6 +835,13 @@ def build_map() -> dict[str, object]:
             tile_layer(6, "Decoration", decoration),
             tile_layer(7, "Lighting", lighting),
             tile_layer(8, "Collision", collision, visible=False),
+            tile_layer(
+                15,
+                "VisionBlockers",
+                vision_blockers,
+                visible=False,
+                blocks_vision=True,
+            ),
             {
                 "id": 9,
                 "name": "PlayerSpawns",

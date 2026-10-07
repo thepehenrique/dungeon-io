@@ -57,11 +57,12 @@ CRAFTPIX_PROPS: dict[str, CraftPixProp] = {
     "barrel-dark": CraftPixProp(
         "Objects", OBJECTS_FIRST_GID, _rows((132,), (156,)), "front", True
     ),
-    "tomb-stone": CraftPixProp(
-        "Objects", OBJECTS_FIRST_GID, _rows((121, 122), (145, 146)), "front", True
-    ),
-    "stone-column": CraftPixProp(
-        "Objects", OBJECTS_FIRST_GID, _rows((121, 122), (145, 146)), "front", True
+    "supply-cluster": CraftPixProp(
+        "Objects",
+        OBJECTS_FIRST_GID,
+        _rows((93, 94, 95), (117, 118, 119)),
+        "front",
+        True,
     ),
 
     # Floor decoration. Several props straddle atlas cell boundaries even
