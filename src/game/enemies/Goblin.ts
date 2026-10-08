@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import type { Player } from '../player/Player';
 import { EnemyState, EnemyType } from '../types/enemy';
-import { Enemy } from './Enemy';
+import { Enemy, type EnemyLineOfSightTest } from './Enemy';
 import {
   GOBLIN_SPRITE,
   GOBLIN_TEXTURE_KEYS,
@@ -32,8 +32,9 @@ export class Goblin extends Enemy {
   override updateAI(
     player: Player,
     onAttack: (attacker: Enemy, target: Player) => void,
+    hasLineOfSight: EnemyLineOfSightTest,
   ): void {
-    super.updateAI(player, onAttack);
+    super.updateAI(player, onAttack, hasLineOfSight);
 
     if (this.isDead || !this.active) {
       return;

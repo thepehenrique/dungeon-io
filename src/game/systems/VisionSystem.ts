@@ -86,23 +86,13 @@ export class VisionSystem {
       return false;
     }
 
-    if (distance <= 0.001) {
-      return true;
-    }
-
-    const directionX = offsetX / distance;
-    const directionY = offsetY / distance;
-    const hitDistance = this.castRay(
+    return hasLineOfSightBetween(
       this.origin.x,
       this.origin.y,
-      directionX,
-      directionY,
-      distance,
+      targetX,
+      targetY,
       this.blockers,
     );
-
-    // A target touching a wall should remain interactable from its visible side.
-    return hitDistance >= distance - 4;
   }
 
   destroy(): void {
@@ -443,6 +433,55 @@ export class VisionSystem {
     graphics.closePath();
     graphics.fillPath();
   }
+}
+
+export function hasLineOfSightBetween(
+  originX: number,
+  originY: number,
+  targetX: number,
+  targetY: number,
+  blockers: readonly VisionBlocker[],
+  wallTolerance = 4,
+): boolean {
+  const offsetX = targetX - originX;
+  const offsetY = targetY - originY;
+  const distance = Math.hypot(offsetX, offsetY);
+
+  if (distance <= 0.001) {
+    return true;
+  }
+
+  const directionX = offsetX / distance;
+  const directionY = offsetY / distance;
+  const minimumX = Math.min(originX, targetX);
+  const minimumY = Math.min(originY, targetY);
+  const maximumX = Math.max(originX, targetX);
+  const maximumY = Math.max(originY, targetY);
+
+  for (const blocker of blockers) {
+    if (
+      blocker.x > maximumX ||
+      blocker.x + blocker.width < minimumX ||
+      blocker.y > maximumY ||
+      blocker.y + blocker.height < minimumY
+    ) {
+      continue;
+    }
+
+    const intersection = rayRectangleIntersection(
+      originX,
+      originY,
+      directionX,
+      directionY,
+      blocker,
+    );
+
+    if (intersection && intersection.near < distance - wallTolerance) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function rayRectangleIntersection(

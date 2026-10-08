@@ -62,7 +62,8 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Flechas e bolas de fogo são projéteis independentes e colidem com paredes.
 - Goblin, Skeleton Warrior e Zombie possuem atributos e velocidades diferentes.
 - Inimigos alternam entre `IDLE`, `CHASE`, `ATTACK` e `DEAD`.
-- Inimigos detectam e perseguem o jogador, respeitando paredes e colisões.
+- Inimigos só detectam, perseguem e atacam o jogador quando possuem linha de
+  visão livre, respeitando paredes e colisões.
 - Ataques do jogador causam dano e podem derrotar inimigos.
 - Inimigos atacam com cooldown próprio e reduzem a vida do jogador.
 - Defesa mitiga dano, mortes são processadas e kills são contabilizadas.

@@ -236,6 +236,7 @@ export class DungeonScene extends Phaser.Scene {
       this,
       player,
       dungeon.walls,
+      dungeon.getVisionBlockers(),
       (attacker, target) => {
         combatSystem.applyDamage(target, {
           sourceId: attacker.enemyId,

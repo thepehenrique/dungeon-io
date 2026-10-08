@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 
 import { ENEMY_WAVE_CONFIG, INITIAL_ENEMY_SPAWNS } from '../config/enemies';
 import type { Player } from '../player/Player';
+import type { VisionBlocker } from '../dungeon/TilemapDungeon';
+import { hasLineOfSightBetween } from '../systems/VisionSystem';
 import type { EnemySpawnDefinition } from '../types/enemy';
-import { Enemy } from './Enemy';
+import { Enemy, type EnemyLineOfSightTest } from './Enemy';
 import { createEnemy } from './createEnemy';
 
 export class EnemyManager {
@@ -14,6 +16,7 @@ export class EnemyManager {
   private readonly onEnemyAttack: (attacker: Enemy, target: Player) => void;
   private readonly colliders: Phaser.Physics.Arcade.Collider[];
   private readonly spawns: readonly EnemySpawnDefinition[];
+  private readonly hasLineOfSight: EnemyLineOfSightTest;
 
   private waveNumber = 1;
   private nextWaveInMs: number | null = null;
@@ -22,6 +25,7 @@ export class EnemyManager {
     scene: Phaser.Scene,
     player: Player,
     walls: Phaser.Physics.Arcade.StaticGroup,
+    visionBlockers: readonly VisionBlocker[],
     onEnemyAttack: (attacker: Enemy, target: Player) => void,
     spawns: readonly EnemySpawnDefinition[] = INITIAL_ENEMY_SPAWNS,
   ) {
@@ -29,6 +33,14 @@ export class EnemyManager {
     this.player = player;
     this.onEnemyAttack = onEnemyAttack;
     this.spawns = spawns;
+    this.hasLineOfSight = (originX, originY, targetX, targetY) =>
+      hasLineOfSightBetween(
+        originX,
+        originY,
+        targetX,
+        targetY,
+        visionBlockers,
+      );
     this.group = scene.physics.add.group({ allowGravity: false });
 
     this.spawnWave();
@@ -43,7 +55,11 @@ export class EnemyManager {
   update(deltaMs: number): void {
     for (const child of [...this.group.getChildren()]) {
       if (child instanceof Enemy && child.active) {
-        child.updateAI(this.player, this.onEnemyAttack);
+        child.updateAI(
+          this.player,
+          this.onEnemyAttack,
+          this.hasLineOfSight,
+        );
       }
     }
 

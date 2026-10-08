@@ -8,6 +8,13 @@ import type { DropTableId } from '../types/drop';
 import { EnemyState, type EnemyStats, type EnemyType } from '../types/enemy';
 import { createEnemyStats } from './createEnemyStats';
 
+export type EnemyLineOfSightTest = (
+  originX: number,
+  originY: number,
+  targetX: number,
+  targetY: number,
+) => boolean;
+
 export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly enemyId: string;
   readonly enemyType: EnemyType;
@@ -77,7 +84,11 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  updateAI(player: Player, onAttack: (attacker: Enemy, target: Player) => void): void {
+  updateAI(
+    player: Player,
+    onAttack: (attacker: Enemy, target: Player) => void,
+    hasLineOfSight: EnemyLineOfSightTest,
+  ): void {
     if (this.currentAiState === EnemyState.Dead || !this.active) {
       return;
     }
@@ -94,6 +105,20 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       player.y,
     );
 
+    const playerDetected = distanceSquared <= this.stats.detectionRange ** 2;
+    const playerVisible = playerDetected && hasLineOfSight(
+      this.x,
+      this.y,
+      player.x,
+      player.y,
+    );
+
+    if (!playerVisible) {
+      this.transitionTo(EnemyState.Idle);
+      this.stopMovement();
+      return;
+    }
+
     if (distanceSquared <= this.stats.attackRange ** 2) {
       this.transitionTo(EnemyState.Attack);
       this.stopMovement();
@@ -102,14 +127,8 @@ export abstract class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    if (distanceSquared <= this.stats.detectionRange ** 2) {
-      this.transitionTo(EnemyState.Chase);
-      this.chase(player);
-      return;
-    }
-
-    this.transitionTo(EnemyState.Idle);
-    this.stopMovement();
+    this.transitionTo(EnemyState.Chase);
+    this.chase(player);
   }
 
   die(): void {
