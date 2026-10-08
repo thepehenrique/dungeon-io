@@ -32,6 +32,8 @@ export interface PlayerClassDefinition {
   readonly id: PlayerClass;
   readonly label: string;
   readonly fantasy: string;
+  readonly portraitAssetPath: string;
+  readonly portraitScale: number;
   readonly color: number;
   readonly cssColor: string;
   readonly baseStats: Readonly<PlayerBaseStats>;

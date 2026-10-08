@@ -30,12 +30,20 @@ export class MenuView {
     wrapper.className = "menu-screen";
 
     const classOptions = PLAYER_CLASS_LIST.map(
-      ({ id, label, fantasy, cssColor }) => `
-        <label class="class-card" style="--class-color: ${cssColor}">
+      ({ id, label, fantasy, cssColor, portraitAssetPath, portraitScale }) => `
+        <label
+          class="class-card"
+          style="--class-color: ${cssColor}; --class-portrait: url('${portraitAssetPath}'); --portrait-scale: ${portraitScale}"
+        >
           <input type="radio" name="player-class" value="${id}" />
           <span class="class-card__content">
-            <strong>${label}</strong>
-            <small>${fantasy}</small>
+            <span class="class-card__portrait" aria-hidden="true">
+              <span class="class-card__portrait-image"></span>
+            </span>
+            <span class="class-card__copy">
+              <strong>${label}</strong>
+              <small>${fantasy}</small>
+            </span>
           </span>
         </label>
       `

@@ -6,6 +6,8 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
     id: PlayerClass.Warrior,
     label: 'Guerreiro',
     fantasy: 'Resistente e implacável no combate próximo.',
+    portraitAssetPath: '/assets/characters/warrior/Warrior_Shield_Walk.png',
+    portraitScale: 0.8,
     color: 0x4d8dff,
     cssColor: '#4d8dff',
     baseStats: {
@@ -23,6 +25,8 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
     id: PlayerClass.Archer,
     label: 'Arqueiro',
     fantasy: 'Ágil e preciso a longa distância.',
+    portraitAssetPath: '/assets/characters/archer/Archer_novice_Walk_with_shadow.png',
+    portraitScale: 1,
     color: 0x58c878,
     cssColor: '#58c878',
     baseStats: {
@@ -40,6 +44,8 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
     id: PlayerClass.Mage,
     label: 'Mago',
     fantasy: 'Frágil, mas dotado de grande poder arcano.',
+    portraitAssetPath: '/assets/characters/mage/Mage_Novice_Walk_with_shadow.png',
+    portraitScale: 0.86,
     color: 0xa778e8,
     cssColor: '#a778e8',
     baseStats: {
