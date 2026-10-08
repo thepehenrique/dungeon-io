@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from collections import deque
 import json
+from math import hypot
 from pathlib import Path
 
 from craftpix_object_catalog import (
@@ -24,6 +25,7 @@ OUTPUT = ROOT / "public/assets/dungeon/dungeon-01.tmj"
 WIDTH = 84
 HEIGHT = 58
 TILE_SIZE = 16
+SAFE_SPAWN_MIN_DISTANCE_TILES = 11
 
 FLOOR_GID = WALLS_FIRST_GID + 138
 WALL_GID = WALLS_FIRST_GID + 40
@@ -377,16 +379,25 @@ def build_spawn_layers(
     object_id = 1
 
     player_positions = [
-        ("PlayerSpawn_01", 42, 51),  # Entrada sul / catacumbas.
-        ("PlayerSpawn_02", 42, 32),  # Salao central.
-        ("PlayerSpawn_03", 42, 8),   # Cripta.
-        ("PlayerSpawn_04", 14, 18),  # Prisoes.
-        ("PlayerSpawn_05", 70, 16),  # Armazem.
-        ("PlayerSpawn_06", 70, 50),  # Ruinas sudeste.
+        ("PlayerSpawn_01", 20, 35, True),  # Guarita Oeste: inicio seguro.
+        ("PlayerSpawn_02", 42, 32, False),  # Salao central.
+        ("PlayerSpawn_03", 42, 8, False),   # Cripta.
+        ("PlayerSpawn_04", 14, 18, False),  # Prisoes.
+        ("PlayerSpawn_05", 70, 16, False),  # Armazem.
+        ("PlayerSpawn_06", 70, 50, False),  # Ruinas sudeste.
     ]
-    for name, x, y in player_positions:
+    for name, x, y, safe_start in player_positions:
         assert (x, y) not in blocked, f"Player spawn blocked: {name}"
-        player_spawns.append(point_object(object_id, name, "PLAYER", x, y, []))
+        player_spawns.append(
+            point_object(
+                object_id,
+                name,
+                "PLAYER",
+                x,
+                y,
+                [tiled_property("safeStart", safe_start, "bool")],
+            )
+        )
         object_id += 1
 
     enemy_positions = [
@@ -396,8 +407,8 @@ def build_spawn_layers(
         ("Zombie Prisao 1", "ZOMBIE", 8, 11),
         ("Skeleton Prisao 2", "SKELETON_WARRIOR", 14, 13),
         ("Goblin Prisao 3", "GOBLIN", 20, 18),
-        ("Goblin Guarita 1", "GOBLIN", 9, 31),
-        ("Zombie Guarita 2", "ZOMBIE", 19, 35),
+        ("Goblin Salao 7", "GOBLIN", 45, 24),
+        ("Zombie Arsenal 4", "ZOMBIE", 73, 35),
         ("Goblin Salao 1", "GOBLIN", 34, 25),
         ("Skeleton Salao 2", "SKELETON_WARRIOR", 42, 26),
         ("Goblin Salao 3", "GOBLIN", 49, 31),
@@ -420,7 +431,7 @@ def build_spawn_layers(
         ("Zombie Cripta 5", "ZOMBIE", 45, 7),
         ("Goblin Prisao 4", "GOBLIN", 9, 17),
         ("Zombie Prisao 5", "ZOMBIE", 17, 20),
-        ("Goblin Guarita 3", "GOBLIN", 11, 34),
+        ("Goblin Armazem 6", "GOBLIN", 65, 14),
         ("Skeleton Salao 5", "SKELETON_WARRIOR", 46, 34),
         ("Goblin Salao 6", "GOBLIN", 33, 28),
         ("Goblin Armazem 4", "GOBLIN", 67, 15),
@@ -446,6 +457,22 @@ def build_spawn_layers(
             )
         )
         object_id += 1
+
+    safe_spawn_positions = [
+        (x, y)
+        for _, x, y, safe_start in player_positions
+        if safe_start
+    ]
+    assert safe_spawn_positions, "The map requires a safe player spawn"
+    for safe_x, safe_y in safe_spawn_positions:
+        nearest_enemy_distance = min(
+            hypot((enemy_x + 0.5) - safe_x, (enemy_y + 0.5) - safe_y)
+            for _, _, enemy_x, enemy_y in enemy_positions
+        )
+        assert nearest_enemy_distance > SAFE_SPAWN_MIN_DISTANCE_TILES, (
+            "Safe player spawn is inside enemy detection range: "
+            f"{nearest_enemy_distance:.2f} tiles"
+        )
 
     # The current gameplay implements common chests only. Keep every new map
     # spawn compatible with that existing system; chest rarity expansion is a
@@ -518,7 +545,7 @@ def assert_reachable(
     blocked: set[tuple[int, int]],
     objects: list[dict[str, object]],
 ) -> None:
-    start = (42, 51)
+    start = (20, 35)
     traversable = walkable - blocked
     queue: deque[tuple[int, int]] = deque([start])
     visited = {start}

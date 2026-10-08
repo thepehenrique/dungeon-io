@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
+import { PLAYER_SPAWN_SAFETY } from '../config/dungeonAssets';
 import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
 import { HUD_LAYOUT } from '../config/hud';
 import { PLAYER_CLASSES } from '../config/playerClasses';
@@ -715,16 +716,53 @@ function selectPlayerSpawn(
   }
 
   const safeSpawns = spawns.filter((spawn) =>
+    spawn.safeStart &&
     enemySpawns.every((enemy) =>
-      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y) > 96 ** 2,
+      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y) >
+        PLAYER_SPAWN_SAFETY.minimumEnemyDistance ** 2,
     ),
   );
-  const candidates = safeSpawns.length > 0 ? safeSpawns : spawns;
-  const selected = candidates[Math.floor(Math.random() * candidates.length)];
+  const selected = safeSpawns.length > 0
+    ? safeSpawns[Math.floor(Math.random() * safeSpawns.length)]
+    : findSpawnFarthestFromEnemies(spawns, enemySpawns);
 
   if (!selected) {
     throw new Error('Unable to choose a player spawn.');
   }
 
   return selected;
+}
+
+function findSpawnFarthestFromEnemies(
+  spawns: readonly MapPoint[],
+  enemySpawns: readonly { readonly x: number; readonly y: number }[],
+): MapPoint | undefined {
+  if (enemySpawns.length === 0) {
+    return spawns[0];
+  }
+
+  return spawns.reduce<MapPoint | undefined>((safest, spawn) => {
+    if (!safest) {
+      return spawn;
+    }
+
+    const nearestEnemyDistance = minimumEnemyDistanceSquared(spawn, enemySpawns);
+    const safestNearestEnemyDistance = minimumEnemyDistanceSquared(
+      safest,
+      enemySpawns,
+    );
+
+    return nearestEnemyDistance > safestNearestEnemyDistance ? spawn : safest;
+  }, undefined);
+}
+
+function minimumEnemyDistanceSquared(
+  spawn: MapPoint,
+  enemySpawns: readonly { readonly x: number; readonly y: number }[],
+): number {
+  return Math.min(
+    ...enemySpawns.map((enemy) =>
+      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y),
+    ),
+  );
 }

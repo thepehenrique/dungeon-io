@@ -13,6 +13,10 @@ export const DUNGEON_MAP = {
   exitGateLayer: 'ExitGates',
 } as const;
 
+export const PLAYER_SPAWN_SAFETY = {
+  minimumEnemyDistance: 11 * 16 * DUNGEON_MAP.scale,
+} as const;
+
 export const DUNGEON_TILESETS = [
   { name: 'walls_floor', key: 'dungeon-walls-floor', file: 'walls_floor.png' },
   { name: 'Objects', key: 'dungeon-objects', file: 'Objects.png' },

@@ -53769,14 +53769,20 @@
           "id": 1,
           "name": "PlayerSpawn_01",
           "type": "PLAYER",
-          "x": 672,
-          "y": 816,
+          "x": 320,
+          "y": 560,
           "width": 0,
           "height": 0,
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": true
+            }
+          ]
         },
         {
           "id": 2,
@@ -53789,7 +53795,13 @@
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": false
+            }
+          ]
         },
         {
           "id": 3,
@@ -53802,7 +53814,13 @@
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": false
+            }
+          ]
         },
         {
           "id": 4,
@@ -53815,7 +53833,13 @@
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": false
+            }
+          ]
         },
         {
           "id": 5,
@@ -53828,7 +53852,13 @@
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": false
+            }
+          ]
         },
         {
           "id": 6,
@@ -53841,7 +53871,13 @@
           "rotation": 0,
           "visible": true,
           "point": true,
-          "properties": []
+          "properties": [
+            {
+              "name": "safeStart",
+              "type": "bool",
+              "value": false
+            }
+          ]
         }
       ]
     },
@@ -54001,10 +54037,10 @@
         },
         {
           "id": 13,
-          "name": "Goblin Guarita 1",
+          "name": "Goblin Salao 7",
           "type": "ENEMY",
-          "x": 152.0,
-          "y": 504.0,
+          "x": 728.0,
+          "y": 392.0,
           "width": 0,
           "height": 0,
           "rotation": 0,
@@ -54025,9 +54061,9 @@
         },
         {
           "id": 14,
-          "name": "Zombie Guarita 2",
+          "name": "Zombie Arsenal 4",
           "type": "ENEMY",
-          "x": 312.0,
+          "x": 1176.0,
           "y": 568.0,
           "width": 0,
           "height": 0,
@@ -54529,10 +54565,10 @@
         },
         {
           "id": 35,
-          "name": "Goblin Guarita 3",
+          "name": "Goblin Armazem 6",
           "type": "ENEMY",
-          "x": 184.0,
-          "y": 552.0,
+          "x": 1048.0,
+          "y": 232.0,
           "width": 0,
           "height": 0,
           "rotation": 0,

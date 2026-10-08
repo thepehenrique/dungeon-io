@@ -18,6 +18,7 @@ export interface MapPoint {
   readonly id: string;
   readonly x: number;
   readonly y: number;
+  readonly safeStart?: boolean;
 }
 
 export interface VisionBlocker {
@@ -205,11 +206,16 @@ export class TilemapDungeon {
       throw new Error('Dungeon player spawn layer is empty.');
     }
 
-    this.playerSpawns = playerLayer.objects.map((object, index) => ({
-      id: object.name || `PlayerSpawn_${index + 1}`,
-      x: (object.x ?? 0) * DUNGEON_MAP.scale,
-      y: (object.y ?? 0) * DUNGEON_MAP.scale,
-    }));
+    this.playerSpawns = playerLayer.objects.map((object, index) => {
+      const properties = (object.properties ?? []) as TiledProperty[];
+
+      return {
+        id: object.name || `PlayerSpawn_${index + 1}`,
+        x: (object.x ?? 0) * DUNGEON_MAP.scale,
+        y: (object.y ?? 0) * DUNGEON_MAP.scale,
+        safeStart: this.getProperty(properties, 'safeStart') === true,
+      };
+    });
     this.enemySpawns = [];
     this.chestSpawns = [];
     this.keySpawns = keyLayer.objects.map((object, index) => ({
