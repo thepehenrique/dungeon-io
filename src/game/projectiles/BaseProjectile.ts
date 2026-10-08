@@ -35,7 +35,13 @@ export abstract class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
       .clone()
       .add(launchData.direction.clone().scale(definition.spawnOffset));
 
-    super(scene, spawnPosition.x, spawnPosition.y, definition.textureKey);
+    super(
+      scene,
+      spawnPosition.x,
+      spawnPosition.y,
+      definition.textureKey,
+      definition.initialFrame,
+    );
 
     this.ownerId = launchData.ownerId;
     this.damage = launchData.damage;
@@ -49,12 +55,15 @@ export abstract class BaseProjectile extends Phaser.Physics.Arcade.Sprite {
       : launchData.maxRange ** 2;
 
     scene.add.existing(this);
+    this.setScale(definition.displayScale ?? 1);
     scene.physics.add.existing(this);
 
+    const bodyScale = Math.abs(this.scaleX) || 1;
+    const bodyRadius = definition.bodyRadius / bodyScale;
     this.setCircle(
-      definition.bodyRadius,
-      this.width / 2 - definition.bodyRadius,
-      this.height / 2 - definition.bodyRadius,
+      bodyRadius,
+      this.width / 2 - bodyRadius,
+      this.height / 2 - bodyRadius,
     );
     this.setRotation(launchData.direction.angle());
     this.setDepth(8);

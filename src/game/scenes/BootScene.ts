@@ -27,6 +27,7 @@ import {
   createArcherAnimations,
   preloadArcherSprites,
 } from '../player/archerAnimations';
+import { preloadClassAbilityTextures } from '../player/classAbilityTextures';
 import { createPlayerPlaceholderTextures } from '../player/playerTextures';
 import {
   createMageAnimations,
@@ -36,7 +37,10 @@ import {
   createWarriorAnimations,
   preloadWarriorSprites,
 } from '../player/warriorAnimations';
-import { createProjectilePlaceholderTextures } from '../projectiles/projectileTextures';
+import {
+  createProjectileTextures,
+  preloadProjectileTextures,
+} from '../projectiles/projectileTextures';
 import {
   createObjectiveTextures,
   preloadObjectiveTextures,
@@ -58,7 +62,9 @@ export class BootScene extends Phaser.Scene {
     preloadZombieSprites(this);
     preloadChestSprites(this);
     preloadConsumableTextures(this);
+    preloadClassAbilityTextures(this);
     preloadObjectiveTextures(this);
+    preloadProjectileTextures(this);
 
     for (const asset of PHASER_UI_ASSETS) {
       this.load.image(asset.key, asset.path);
@@ -81,7 +87,7 @@ export class BootScene extends Phaser.Scene {
     createArcherAnimations(this);
     createMageAnimations(this);
     createWarriorAnimations(this);
-    createProjectilePlaceholderTextures(this);
+    createProjectileTextures(this);
     createObjectiveTextures(this);
     this.registry.set(REGISTRY_KEYS.GAME_SESSION, new GameSession());
     this.scene.start(SCENE_KEYS.MENU);

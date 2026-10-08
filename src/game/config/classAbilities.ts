@@ -12,10 +12,28 @@ export const ARCHER_DASH_CONFIG = {
   cooldownMs: 2_000,
 } as const;
 
+export const ARCHER_DASH_VISUAL_CONFIG = {
+  textureKey: 'archer-dash-trail',
+  assetPath: 'assets/abilities/archer-dash-trail.png',
+  displayWidth: 120,
+  displayHeight: 60,
+  originX: 0.88,
+  alpha: 0.78,
+  depth: 9,
+} as const;
+
 export const MAGE_PROTECTION_CONFIG = {
   durationMs: 2_000,
   cooldownMs: 6_000,
   damageReduction: 0.7,
+} as const;
+
+export const MAGE_PROTECTION_VISUAL_CONFIG = {
+  textureKey: 'mage-arcane-shield',
+  assetPath: 'assets/abilities/mage-arcane-shield.png',
+  displaySize: 112,
+  alpha: 0.82,
+  depth: 11,
 } as const;
 
 export const CLASS_ABILITY_PRESENTATION = {

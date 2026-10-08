@@ -147,7 +147,7 @@ export class ClassAbilityController {
     this.dashDirection.normalize();
     this.activeRemainingMs = ARCHER_DASH_CONFIG.durationMs;
     this.cooldownRemainingMs = ARCHER_DASH_CONFIG.cooldownMs;
-    this.player.setDashing(true);
+    this.player.setDashing(true, this.dashDirection);
   }
 
   private updateMage(deltaMs: number, spacePressed: boolean): void {

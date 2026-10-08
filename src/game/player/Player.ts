@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 
 import {
+  ARCHER_DASH_VISUAL_CONFIG,
   MAGE_PROTECTION_CONFIG,
+  MAGE_PROTECTION_VISUAL_CONFIG,
   WARRIOR_BLOCK_CONFIG,
 } from '../config/classAbilities';
 import { COMBAT_BALANCE } from '../config/combat';
@@ -66,7 +68,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private blocking = false;
   private dashing = false;
   private magicProtectionActive = false;
-  private abilityAura: Phaser.GameObjects.Arc | null = null;
+  private abilityAura: Phaser.GameObjects.Image | null = null;
+  private dashTrail: Phaser.GameObjects.Image | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -115,11 +118,34 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
     this.setDepth(10);
 
+    if (this.playerClass === PlayerClass.Archer) {
+      this.dashTrail = scene.add
+        .image(this.x, this.y, ARCHER_DASH_VISUAL_CONFIG.textureKey)
+        .setOrigin(ARCHER_DASH_VISUAL_CONFIG.originX, 0.5)
+        .setDisplaySize(
+          ARCHER_DASH_VISUAL_CONFIG.displayWidth,
+          ARCHER_DASH_VISUAL_CONFIG.displayHeight,
+        )
+        .setAlpha(ARCHER_DASH_VISUAL_CONFIG.alpha)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(ARCHER_DASH_VISUAL_CONFIG.depth)
+        .setVisible(false);
+    }
+
     if (this.playerClass === PlayerClass.Mage) {
       this.abilityAura = scene.add
-        .circle(this.x, this.y, 34, 0x786de8, 0.18)
-        .setStrokeStyle(3, 0xa99cff, 0.9)
-        .setDepth(9)
+        .image(
+          this.x,
+          this.y,
+          MAGE_PROTECTION_VISUAL_CONFIG.textureKey,
+        )
+        .setDisplaySize(
+          MAGE_PROTECTION_VISUAL_CONFIG.displaySize,
+          MAGE_PROTECTION_VISUAL_CONFIG.displaySize,
+        )
+        .setAlpha(MAGE_PROTECTION_VISUAL_CONFIG.alpha)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(MAGE_PROTECTION_VISUAL_CONFIG.depth)
         .setVisible(false);
     }
   }
@@ -333,7 +359,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.refreshAbilityPresentation();
   }
 
-  setDashing(active: boolean): void {
+  setDashing(active: boolean, direction?: Phaser.Math.Vector2): void {
     const nextState = this.isArcher && !this.dead && active;
 
     if (nextState === this.dashing) {
@@ -341,6 +367,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.dashing = nextState;
+
+    if (nextState && direction && direction.lengthSq() > 0) {
+      this.dashTrail?.setRotation(direction.angle());
+    }
+
     this.refreshAbilityPresentation();
   }
 
@@ -483,9 +514,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.abilityAura.setVisible(this.magicProtectionActive && !this.dead);
       this.updateAbilityAuraPosition();
     }
+
+    if (this.dashTrail) {
+      this.dashTrail.setVisible(this.dashing && !this.dead);
+      this.updateAbilityAuraPosition();
+    }
   }
 
   private updateAbilityAuraPosition(): void {
     this.abilityAura?.setPosition(this.x, this.y);
+    this.dashTrail?.setPosition(this.x, this.y);
   }
 }
