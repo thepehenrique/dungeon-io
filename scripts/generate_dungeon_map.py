@@ -19,6 +19,27 @@ TILE_SIZE = 16
 SAFE_SPAWN_DISTANCE_TILES = 11
 ENEMY_COUNT = 36
 ENEMY_TYPES = ("GOBLIN", "SKELETON_WARRIOR", "ZOMBIE")
+COLLISION_MARKER_GID = 607
+COMPOSITION_TILESET_NAME = "Composicao"
+# Only the ground-contact cells are physical. Upper artwork remains free so
+# multi-tile props do not create oversized invisible walls.
+SOLID_PROP_BASE_LOCAL_IDS = {
+    # Barrel and single crate.
+    16,
+    20,
+    # Stacked crates and the crate/barrel supply cluster.
+    24,
+    25,
+    28,
+    29,
+    # Floor vases, iron obstacle and stone stair obstacle.
+    80,
+    84,
+    88,
+    89,
+    124,
+    125,
+}
 EXIT_BLOCKING_LAYERS = (
     "Collision",
     "Water",
@@ -104,6 +125,34 @@ def find_layer(map_data: dict[str, object], name: str) -> dict[str, object]:
         if layer.get("name") == name:
             return layer
     raise ValueError(f"Required Tiled layer is missing: {name}")
+
+
+def tileset_first_gid(map_data: dict[str, object], name: str) -> int:
+    for tileset in map_data["tilesets"]:
+        if tileset.get("name") == name:
+            return int(tileset["firstgid"])
+    raise ValueError(f"Required Tiled tileset is missing: {name}")
+
+
+def add_solid_prop_collisions(
+    map_data: dict[str, object],
+    props: list[int],
+    collision: list[int],
+) -> int:
+    composition_first_gid = tileset_first_gid(
+        map_data,
+        COMPOSITION_TILESET_NAME,
+    )
+    added = 0
+
+    for index, gid in enumerate(props):
+        local_id = gid - composition_first_gid
+        if local_id not in SOLID_PROP_BASE_LOCAL_IDS or collision[index] != 0:
+            continue
+        collision[index] = COLLISION_MARKER_GID
+        added += 1
+
+    return added
 
 
 def is_open_cell(
@@ -258,8 +307,7 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
     collision_layer = find_layer(map_data, "Collision")
     traps_layer = find_layer(map_data, "Traps")
     props_layer = find_layer(map_data, "Props")
-    collision = list(collision_layer["data"])
-    traps = list(traps_layer["data"])
+    vision_collision = list(collision_layer["data"])
     width = int(map_data["width"])
     height = int(map_data["height"])
     gameplay_objects = list(gameplay["objects"])
@@ -276,6 +324,16 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
                     props_layer["data"][y * width + x] = 0
         elif obj.get("type") == "key_spawn":
             props_layer["data"][tile_y * width + tile_x] = 0
+
+    solid_prop_collision_count = add_solid_prop_collisions(
+        map_data,
+        list(props_layer["data"]),
+        collision_layer["data"],
+    )
+    if solid_prop_collision_count == 0:
+        raise ValueError("No physical CraftPix props were found in the map")
+    collision = list(collision_layer["data"])
+    traps = list(traps_layer["data"])
 
     source_player = next(
         obj for obj in gameplay_objects if obj.get("type") == "player_spawn"
@@ -414,6 +472,7 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
     vision_layer["id"] = int(map_data.get("nextlayerid", 11))
     vision_layer["name"] = "VisionBlockers"
     vision_layer["visible"] = False
+    vision_layer["data"] = vision_collision
     vision_layer["properties"] = [
         tiled_property("blocksVision", True, "bool")
     ]
@@ -458,11 +517,19 @@ def main() -> None:
     source = json.loads(SOURCE.read_text())
     runtime_map = build_runtime_map(source)
     OUTPUT.write_text(json.dumps(runtime_map, ensure_ascii=False, indent=2) + "\n")
+    collision_data = find_layer(runtime_map, "Collision")["data"]
+    vision_data = find_layer(runtime_map, "VisionBlockers")["data"]
+    solid_prop_cells = sum(
+        1
+        for collision, vision in zip(collision_data, vision_data)
+        if collision and not vision
+    )
     print(f"Generated {OUTPUT}")
     print(
         f"Map: {runtime_map['width']}x{runtime_map['height']}; "
         f"rooms: 11; enemies: {ENEMY_COUNT}; chests: 3; keys: 1; "
-        f"exits: {len(find_layer(runtime_map, 'ExitGates')['objects'])}"
+        f"exits: {len(find_layer(runtime_map, 'ExitGates')['objects'])}; "
+        f"solid prop cells: {solid_prop_cells}"
     )
 
 

@@ -37,6 +37,8 @@ configured 11-tile safety radius.
 Original visual layers are preserved as `Floor`, `Water`, `Walls`, `Details`,
 `Props`, `Doors`, `Fire` and `Traps`. `Collision`, `Gameplay` and
 `VisionBlockers` stay hidden. `Fire` uses additive blending in Phaser.
+Solid CraftPix props receive generated collision at their ground-contact cells;
+their upper visual tiles remain non-physical and they do not block vision.
 
 The source PNG files are unchanged. `Composicao.png` contains integral
 compositions made from the original CraftPix pieces, including 3×3 portals and

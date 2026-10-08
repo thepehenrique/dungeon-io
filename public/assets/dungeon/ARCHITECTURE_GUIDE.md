@@ -26,6 +26,12 @@ Hidden technical layers:
 - `Gameplay`: authoring markers for rooms, lights, loot, doors and objectives.
 - `VisionBlockers`: generated from collision for the existing vision system.
 
+The runtime generator adds physical collision only to the ground-contact cells
+of crates, barrels, vases, iron obstacles and stone stair props. These props
+block the player, enemies, projectiles and item drops, but are deliberately not
+copied to `VisionBlockers`, so they remain visible without producing black fog
+wedges.
+
 ## Editing workflow
 
 Edit `catacumbas-84x58-source.tmj`, not `dungeon-01.tmj`. Keep all PNG files in
@@ -37,9 +43,9 @@ npm run build
 ```
 
 The generator validates connectivity, keeps the player outside enemy detection
-range, avoids collision/trap cells for enemy points and rebuilds the runtime
-object layers. It generates one safe exit candidate per combat room, rejecting
-areas that overlap walls, water, props, doors, fire, traps, runtime entities or
-unreachable floor. The runtime randomly chooses one of these candidates for
-each run. Visual changes made directly to `dungeon-01.tmj` will be replaced the
-next time the importer runs.
+range, avoids collision/trap/solid-prop cells for enemy points and rebuilds the
+runtime object layers. It generates one safe exit candidate per combat room,
+rejecting areas that overlap walls, water, props, doors, fire, traps, runtime
+entities or unreachable floor. The runtime randomly chooses one of these
+candidates for each run. Visual changes made directly to `dungeon-01.tmj` will
+be replaced the next time the importer runs.
