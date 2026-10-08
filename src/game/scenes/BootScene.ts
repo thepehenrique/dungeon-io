@@ -37,7 +37,10 @@ import {
   preloadWarriorSprites,
 } from '../player/warriorAnimations';
 import { createProjectilePlaceholderTextures } from '../projectiles/projectileTextures';
-import { createObjectiveTextures } from '../objectives/objectiveTextures';
+import {
+  createObjectiveTextures,
+  preloadObjectiveTextures,
+} from '../objectives/objectiveTextures';
 import { GameSession } from '../state/GameSession';
 
 export class BootScene extends Phaser.Scene {
@@ -55,6 +58,7 @@ export class BootScene extends Phaser.Scene {
     preloadZombieSprites(this);
     preloadChestSprites(this);
     preloadConsumableTextures(this);
+    preloadObjectiveTextures(this);
 
     for (const asset of PHASER_UI_ASSETS) {
       this.load.image(asset.key, asset.path);

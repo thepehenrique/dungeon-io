@@ -1,6 +1,6 @@
 # CraftPix dungeon assets
 
-Runtime assets adapted from **Free 2D Top-Down Pixel Dungeon Asset Pack**:
+Runtime assets come from **Free 2D Top-Down Pixel Dungeon Asset Pack**:
 
 https://craftpix.net/freebies/free-2d-top-down-pixel-dungeon-asset-pack/
 
@@ -8,71 +8,36 @@ License terms:
 
 https://craftpix.net/file-licenses/
 
-The original PSD files, promotional images and coupons are intentionally not included.
-The `dungeon-01.tmj` file is an original, finite 84×58 exploration map built with
-the pack's floor, wall, object, crack and fire tiles. It contains nine deliberate
-architectural regions, multiple routes and loops, collision-aware obstacles,
-enemy/chest spawn points and a hidden `Regions` object layer to make navigation
-inside Tiled easier.
+`catacumbas-84x58-source.tmj` is the editable source map supplied for the
+Catacumbas layout. It uses a 16×16 orthogonal grid and contains 11 rooms,
+alternate routes, a secret passage, water, traps, doors, props and collision.
+Keep every referenced PNG in this directory when opening the source in Tiled.
 
-Its structural layout is organized around a large central hall with a crypt to
-the north, prisons and a guard room to the west, warehouse and arsenal rooms to
-the east, ruins in both lower wings and catacombs to the south. Rooms are kept
-apart by true negative space and connected by consistent three/five-tile
-corridors. The west, east and southern branches form alternate loops instead of
-one continuous floor mass.
+`dungeon-01.tmj` is the generated runtime version. Running
+`python3 scripts/generate_dungeon_map.py` copies the visual architecture and
+adds the object layers expected by Phaser:
 
-Walls use separate `WallsBack` and `WallsFront` layers. North/side edges establish
-the room outline, while south walls add a ledge plus two rows of vertical face.
-Open arches are stamped into selected north/south thresholds and keep only their
-stone uprights collidable. See `ARCHITECTURE_GUIDE.md` for verified local tile IDs
-and the exact Tiled construction pattern.
+- `PlayerSpawns`
+- `EnemySpawns`
+- `ChestSpawns`
+- `KeySpawns`
+- `ExitGates`
+- `Regions`
+- `VisionBlockers`
 
-The tilesets are embedded in the `.tmj`; this project does not use external `.tsx`
-files. Original PNG files remain unchanged.
+The importer preserves the original `Gameplay` layer for editing, creates 36
+enemy points across the nine combat rooms, converts the three chest markers,
+and uses the supplied key and player start. It also creates nine validated exit
+door candidates, one per combat room; the game randomly chooses one on each
+run. Every candidate has enough clear, reachable floor for the full door art
+and its approach, without overlapping runtime entities or blocked visual
+layers. The Vestibulo remains a safe starting room, with no enemy inside the
+configured 11-tile safety radius.
 
-Gameplay points are organized into the `PlayerSpawns`, `EnemySpawns`,
-`ChestSpawns`, `KeySpawns` and `ExitGates` object layers. Phaser currently uses
-one valid `PlayerSpawns` point and one `ExitGates` point at random when each run
-starts. The run objective system chooses one `KeySpawns` point only when the
-escape phase begins. Adding valid points to those layers automatically expands
-the runtime choices without requiring hardcoded TypeScript coordinates.
+Original visual layers are preserved as `Floor`, `Water`, `Walls`, `Details`,
+`Props`, `Doors`, `Fire` and `Traps`. `Collision`, `Gameplay` and
+`VisionBlockers` stay hidden. `Fire` uses additive blending in Phaser.
 
-The gameplay object layers remain available for runtime compatibility and are
-independent from the visual reference used to shape the rooms and corridors.
-`KeySpawns` contains invisible candidate points used by the run objective system;
-the map itself contains no decorative or permanently visible key tiles.
-
-Torch composites live on the dedicated `Lighting` tile layer. Phaser keeps that
-layer bright with additive blending while applying the configured ambient tint to
-the remaining environment layers.
-
-## CraftPix object proportions
-
-`scripts/craftpix_object_catalog.py` is the authoritative catalog for every
-CraftPix prop placed by the map generator. Many drawings in `Objects.png` cross
-tile boundaries even though the atlas itself uses a 16×16 grid. Crates, barrels,
-tombs, vases, gold piles and crystals must therefore be placed through a complete
-catalog composition instead of by copying a single local tile id.
-
-Each catalog entry declares its tileset, complete tile matrix, visual direction
-and whether it is a solid obstacle. Coordinates passed to the generator refer to
-the top-left cell of that matrix. Wide/front and light/dark variants are separate
-entries so their footprint is explicit.
-
-When adding a future CraftPix prop:
-
-1. inspect every neighboring atlas cell occupied by the drawing;
-2. add the complete matrix to `CRAFTPIX_PROPS`;
-3. set its visual direction and collision behavior;
-4. place it with `add_prop` (solid) or `place_prop` (visual only);
-5. regenerate the map and keep the catalog validation passing.
-
-The generator rejects malformed catalog entries, invalid local tile ids,
-overlapping composites, props outside the map and decorations that cross walls or
-obstacles. Animated gameplay entities such as the interactive chest keep their
-frame crop in their corresponding runtime animation module because they are not
-static Tiled props.
-
-Run `python3 scripts/generate_dungeon_map.py` from the project root to regenerate
-the deterministic map layout. The resulting `.tmj` remains fully editable in Tiled.
+The source PNG files are unchanged. `Composicao.png` contains integral
+compositions made from the original CraftPix pieces, including 3×3 portals and
+complete multi-tile props.

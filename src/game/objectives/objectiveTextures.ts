@@ -5,6 +5,12 @@ export const OBJECTIVE_TEXTURE_KEYS = {
   exitDoor: 'objective-exit-door',
 } as const;
 
+const EXIT_DOOR_ASSET_PATH = 'assets/objectives/turquoise-rune-exit-door.png';
+
+export function preloadObjectiveTextures(scene: Phaser.Scene): void {
+  scene.load.image(OBJECTIVE_TEXTURE_KEYS.exitDoor, EXIT_DOOR_ASSET_PATH);
+}
+
 export function createObjectiveTextures(scene: Phaser.Scene): void {
   if (!scene.textures.exists(OBJECTIVE_TEXTURE_KEYS.dungeonKey)) {
     const graphics = scene.make.graphics({ x: 0, y: 0 }, false);

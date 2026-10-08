@@ -1,47 +1,45 @@
-# Dungeon architecture guide
+# Catacumbas map guide
 
-The runtime map uses a 16×16 tile grid and Phaser scales it by 3 (48×48 world
-pixels). The source art remains unchanged.
+## Tiled settings
 
-## Verified `walls_floor.png` local tile IDs
+- orientation: orthogonal
+- map size: 84×58 tiles
+- tile size: 16×16 px
+- Phaser scale: 3
+- world size: 4032×2784 px
+- finite map, render order `right-down`
 
-The tileset has 17 columns. Tiled GID is `local ID + 1` because this is the
-first tileset in the map.
-
-| Purpose | Local IDs |
-| --- | --- |
-| North wall | 18, 19, 20 (left, middle, right) |
-| Side walls | 35, 37 (west, east) |
-| South wall ledge | 52, 53, 54 (left, middle, right) |
-| South wall face | 69, 70, 71 (left, middle, right) |
-| South wall lower face | 86, 87, 88 (left, middle, right) |
-| Open arch, top | 430, 431, 432 |
-| Open arch, middle | 447, 448, 449 |
-| Open arch, threshold | 464, 465, 466 |
-
-## Layer order
+## Visual layer order
 
 1. `Floor`
-2. `FloorDetails`
-3. `WallsBack`
-4. `WallDetails`
-5. `Obstacles`
-6. `Decoration`
+2. `Water`
+3. `Walls`
+4. `Details`
+5. `Props`
+6. `Traps`
 7. `Doors`
-8. `WallsFront`
-9. `Lighting`
-10. hidden `Collision`
-11. hidden `VisionBlockers`
+8. `Fire`
 
-`WallsFront` renders above actors. Its two facade rows are visual overhangs;
-collision and vision remain on the wall base. An open arch has collision only
-on its stone uprights, never in the centre passage.
+Hidden technical layers:
 
-## Reproducing a room in Tiled
+- `Collision`: every physical wall, water edge and solid obstacle.
+- `Gameplay`: authoring markers for rooms, lights, loot, doors and objectives.
+- `VisionBlockers`: generated from collision for the existing vision system.
 
-Draw floor first. Add a one-tile collision boundary around it. Use the north
-family on the upper edge, side tiles on west/east, and the three south-facing
-rows on the lower edge. Put the two lower rows in `WallsFront`. For a doorway,
-stamp the 3×3 open arch and clear the centre column in both hidden layers.
-Place props by their base cell; tall pixels may overlap upward without moving
-the collision base.
+## Editing workflow
+
+Edit `catacumbas-84x58-source.tmj`, not `dungeon-01.tmj`. Keep all PNG files in
+the same directory, save the source in Tiled, then run:
+
+```bash
+python3 scripts/generate_dungeon_map.py
+npm run build
+```
+
+The generator validates connectivity, keeps the player outside enemy detection
+range, avoids collision/trap cells for enemy points and rebuilds the runtime
+object layers. It generates one safe exit candidate per combat room, rejecting
+areas that overlap walls, water, props, doors, fire, traps, runtime entities or
+unreachable floor. The runtime randomly chooses one of these candidates for
+each run. Visual changes made directly to `dungeon-01.tmj` will be replaced the
+next time the importer runs.

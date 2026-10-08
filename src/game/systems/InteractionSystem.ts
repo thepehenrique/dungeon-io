@@ -160,7 +160,10 @@ export class InteractionSystem {
     } else if (nearest?.type === 'DUNGEON_KEY') {
       this.prompt.setPosition(nearest.key.x, nearest.key.y - 34);
     } else if (nearest?.type === 'EXIT_DOOR') {
-      this.prompt.setPosition(nearest.door.x, nearest.door.y - 86);
+      this.prompt.setPosition(
+        nearest.door.x,
+        nearest.door.y - RUN_OBJECTIVE_CONFIG.exitDoorPromptOffsetY,
+      );
     }
   }
 
@@ -191,7 +194,7 @@ export class InteractionSystem {
       if (result === 'LOCKED') {
         this.onFeedback({
           x: target.door.x,
-          y: target.door.y - 45,
+          y: target.door.y - RUN_OBJECTIVE_CONFIG.exitDoorFeedbackOffsetY,
           message: 'Você precisa encontrar a chave.',
           color: '#ed7777',
         });
