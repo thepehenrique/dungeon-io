@@ -32,7 +32,14 @@ const ATTACK_FRAME_RANGES: Readonly<Record<WarriorFacing, readonly [number, numb
   up: [18, 23],
 };
 
-const BLOCK_FRAME_RANGES = WALK_FRAME_RANGES;
+const BLOCK_FRAME_RANGES: Readonly<
+  Record<WarriorFacing, readonly [number, number]>
+> = {
+  right: [12, 14],
+  left: [6, 8],
+  down: [0, 2],
+  up: [18, 20],
+};
 
 export function getWarriorWalkAnimationKey(facing: WarriorFacing): string {
   return `warrior-shield-walk-${facing}`;
@@ -122,7 +129,7 @@ export function createWarriorAnimations(scene: Phaser.Scene): void {
           end,
         }),
         frameRate: 8,
-        repeat: -1,
+        repeat: 0,
       });
     }
   }

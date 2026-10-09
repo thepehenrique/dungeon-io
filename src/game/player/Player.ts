@@ -58,6 +58,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private warriorFacing: WarriorFacing = 'down';
   private warriorMoving = false;
   private warriorAttacking = false;
+  private warriorBlockingFacing: WarriorFacing | null = null;
   private archerFacing: ArcherFacing = 'down';
   private archerMoving = false;
   private archerAttacking = false;
@@ -401,6 +402,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.dead = true;
     this.blocking = false;
+    this.warriorBlockingFacing = null;
     this.dashing = false;
     this.magicProtectionActive = false;
     this.setVelocity(0, 0);
@@ -428,9 +430,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.blocking) {
-      this.play(getWarriorBlockAnimationKey(this.warriorFacing), true);
+      if (this.warriorBlockingFacing !== this.warriorFacing) {
+        this.warriorBlockingFacing = this.warriorFacing;
+        this.play(getWarriorBlockAnimationKey(this.warriorFacing));
+      }
       return;
     }
+
+    this.warriorBlockingFacing = null;
 
     if (this.warriorMoving) {
       this.play(getWarriorWalkAnimationKey(this.warriorFacing), true);
