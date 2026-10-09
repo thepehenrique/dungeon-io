@@ -382,18 +382,22 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
+    // Level-up choices pause the run by design. The inventory only pauses
+    // combat, so its management screen cannot be used to stop the run clock.
+    if (!this.isChoosingUpgrade) {
+      this.runTimerSystem?.update(delta);
+      this.hud?.update();
+    }
+
+    if (this.gameOverPending) {
+      this.scene.start(SCENE_KEYS.GAME_OVER);
+      return;
+    }
+
     if (this.isChoosingUpgrade || this.isInventoryOpen) {
       if (this.isInventoryOpen) {
         this.playerController?.discardActionPresses();
       }
-      return;
-    }
-
-    this.runTimerSystem?.update(delta);
-    this.hud?.update();
-
-    if (this.gameOverPending) {
-      this.scene.start(SCENE_KEYS.GAME_OVER);
       return;
     }
 
@@ -643,7 +647,6 @@ export class DungeonScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
     this.tweens.pauseAll();
-    this.time.paused = true;
     this.interactionSystem?.update(false);
     this.inventoryView = new InventoryView(
       uiRoot,
@@ -690,7 +693,6 @@ export class DungeonScene extends Phaser.Scene {
 
     this.inventoryView?.destroy();
     this.inventoryView = null;
-    this.time.paused = false;
     this.physics.world.resume();
     this.tweens.resumeAll();
     this.isInventoryOpen = false;

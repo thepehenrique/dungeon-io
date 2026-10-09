@@ -83,6 +83,8 @@ export class EquipmentSystem {
       return { success: false, message: 'Item não encontrado' };
     }
 
+    const healthBeforeEquipmentChange = this.player.stats.health;
+
     if (previous && !previous.isBase) {
       if (!previous.instance) {
         this.inventory.restoreSlot(selected);
@@ -99,19 +101,20 @@ export class EquipmentSystem {
         this.inventory.restoreSlot(selected);
         previous.appliedModifiers = this.applyModifiers(
           previous.definition.modifiers,
-          true,
         );
+        this.restoreHealthAfterEquipmentChange(healthBeforeEquipmentChange);
         return { success: false, message: 'Falha ao trocar equipamento' };
       }
     }
 
-    const appliedModifiers = this.applyModifiers(definition.modifiers, true);
+    const appliedModifiers = this.applyModifiers(definition.modifiers);
     this.equippedItems.set(definition.slot, {
       instance: selected.item,
       definition,
       isBase: false,
       appliedModifiers,
     });
+    this.restoreHealthAfterEquipmentChange(healthBeforeEquipmentChange);
     this.changeRevision += 1;
     return { success: true, message: `${definition.name} equipado` };
   }
@@ -134,6 +137,8 @@ export class EquipmentSystem {
       return { success: false, message: 'Inventário cheio' };
     }
 
+    const healthBeforeEquipmentChange = this.player.stats.health;
+
     this.removeModifiers(equipped.appliedModifiers);
     this.inventory.restoreSlot({ item: equipped.instance, quantity: 1 });
     if (slot === EquipmentSlot.Weapon) {
@@ -146,6 +151,7 @@ export class EquipmentSystem {
     } else {
       this.equippedItems.delete(slot);
     }
+    this.restoreHealthAfterEquipmentChange(healthBeforeEquipmentChange);
     this.changeRevision += 1;
     return { success: true, message: `${equipped.definition.name} desequipado` };
   }
@@ -187,10 +193,7 @@ export class EquipmentSystem {
     const healthChange = this.player.stats.health - healthBeforeChange;
 
     for (const item of equipped) {
-      item.appliedModifiers = this.applyModifiers(
-        item.definition.modifiers,
-        false,
-      );
+      item.appliedModifiers = this.applyModifiers(item.definition.modifiers);
     }
 
     this.player.stats.health = clamp(
@@ -202,17 +205,11 @@ export class EquipmentSystem {
 
   private applyModifiers(
     modifiers: readonly ItemModifier[],
-    increaseHealth: boolean,
   ): readonly AppliedModifier[] {
-    return modifiers.map((modifier) =>
-      this.applyModifier(modifier, increaseHealth),
-    );
+    return modifiers.map((modifier) => this.applyModifier(modifier));
   }
 
-  private applyModifier(
-    modifier: ItemModifier,
-    increaseHealth: boolean,
-  ): AppliedModifier {
+  private applyModifier(modifier: ItemModifier): AppliedModifier {
     const currentValue = this.player.stats[modifier.stat];
     const rawDelta =
       modifier.mode === ModifierMode.Flat
@@ -222,18 +219,15 @@ export class EquipmentSystem {
 
     this.player.stats[modifier.stat] = roundStat(currentValue + delta);
 
-    if (
-      increaseHealth &&
-      modifier.stat === ItemStat.MaxHealth &&
-      delta > 0
-    ) {
-      this.player.stats.health = Math.min(
-        this.player.stats.maxHealth,
-        this.player.stats.health + delta,
-      );
-    }
-
     return { stat: modifier.stat, delta };
+  }
+
+  private restoreHealthAfterEquipmentChange(previousHealth: number): void {
+    this.player.stats.health = clamp(
+      previousHealth,
+      0,
+      this.player.stats.maxHealth,
+    );
   }
 
   private removeModifiers(
