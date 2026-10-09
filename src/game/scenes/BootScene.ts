@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { DUNGEON_MUSIC, MENU_MUSIC } from '../config/audio';
 import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
 import { PHASER_UI_ASSETS } from '../config/uiAssets';
 import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
@@ -54,6 +55,8 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
+    this.load.audio(MENU_MUSIC.key, MENU_MUSIC.path);
+    this.load.audio(DUNGEON_MUSIC.key, DUNGEON_MUSIC.path);
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
     preloadMageSprites(this);

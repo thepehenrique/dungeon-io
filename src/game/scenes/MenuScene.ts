@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { SceneMusic } from '../audio/SceneMusic';
+import { MENU_MUSIC } from '../config/audio';
 import { SCENE_KEYS } from '../constants/game';
 import { getGameSession } from '../state/getGameSession';
 import {
@@ -13,6 +15,7 @@ import { MenuView } from '../../ui/menu/MenuView';
 export class MenuScene extends Phaser.Scene {
   private menuView: MenuView | null = null;
   private howToPlayView: HowToPlayView | null = null;
+  private menuMusic: SceneMusic | null = null;
 
   constructor() {
     super(SCENE_KEYS.MENU);
@@ -27,6 +30,8 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard?.clearCaptures();
     getGameSession(this).clear();
+    this.menuMusic = new SceneMusic(this, MENU_MUSIC);
+    this.menuMusic.start();
     this.menuView = new MenuView(uiRoot, {
       onSubmit: ({ playerName, playerClass }) => {
         if (hasSeenTutorial()) {
@@ -46,6 +51,8 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.menuMusic?.stop();
+      this.menuMusic = null;
       this.howToPlayView?.destroy();
       this.howToPlayView = null;
       this.menuView?.destroy();

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { SceneMusic } from '../audio/SceneMusic';
+import { DUNGEON_MUSIC } from '../config/audio';
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
 import { PLAYER_SPAWN_SAFETY } from '../config/dungeonAssets';
@@ -60,6 +62,7 @@ export class DungeonScene extends Phaser.Scene {
   private runObjectiveSystem: RunObjectiveSystem | null = null;
   private runTimerSystem: RunTimerSystem | null = null;
   private visionSystem: VisionSystem | null = null;
+  private dungeonMusic: SceneMusic | null = null;
   private runAnnouncementText: Phaser.GameObjects.Text | null = null;
   private inventoryView: InventoryView | null = null;
   private inventoryKey: Phaser.Input.Keyboard.Key | null = null;
@@ -83,6 +86,9 @@ export class DungeonScene extends Phaser.Scene {
       this.scene.start(SCENE_KEYS.MENU);
       return;
     }
+
+    this.dungeonMusic = new SceneMusic(this, DUNGEON_MUSIC);
+    this.dungeonMusic.start();
 
     const dungeon = new TilemapDungeon(this);
     dungeon.create();
@@ -323,6 +329,8 @@ export class DungeonScene extends Phaser.Scene {
     );
     this.showRunAnnouncement('SOBREVIVA E FIQUE MAIS FORTE', '');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.dungeonMusic?.stop();
+      this.dungeonMusic = null;
       if (this.inventoryKey) {
         this.input.keyboard?.removeKey(this.inventoryKey, true, true);
       }
