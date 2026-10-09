@@ -6,17 +6,24 @@ export interface MenuSubmission {
   readonly playerClass: PlayerClass;
 }
 
+export interface MenuActions {
+  readonly onSubmit: (submission: MenuSubmission) => void;
+  readonly onShowHowToPlay: (playerClass: PlayerClass | null) => void;
+}
+
 export class MenuView {
   private readonly root: HTMLElement;
   private readonly element: HTMLElement;
   private readonly onSubmit: (submission: MenuSubmission) => void;
+  private readonly onShowHowToPlay: (playerClass: PlayerClass | null) => void;
 
   constructor(
     root: HTMLElement,
-    onSubmit: (submission: MenuSubmission) => void
+    actions: MenuActions
   ) {
     this.root = root;
-    this.onSubmit = onSubmit;
+    this.onSubmit = actions.onSubmit;
+    this.onShowHowToPlay = actions.onShowHowToPlay;
     this.element = this.build();
     this.root.replaceChildren(this.element);
   }
@@ -73,7 +80,10 @@ export class MenuView {
           </fieldset>
 
           <p class="form-error" role="alert" aria-live="polite"></p>
-          <button class="play-button" type="submit">JOGAR</button>
+          <div class="menu-actions">
+            <button class="how-to-play-button" type="button">COMO JOGAR</button>
+            <button class="play-button" type="submit">JOGAR</button>
+          </div>
         </form>
       </div>
     `;
@@ -81,10 +91,22 @@ export class MenuView {
     const form = wrapper.querySelector<HTMLFormElement>("form");
     const nameInput = wrapper.querySelector<HTMLInputElement>("#player-name");
     const errorElement = wrapper.querySelector<HTMLElement>(".form-error");
+    const howToPlayButton = wrapper.querySelector<HTMLButtonElement>(
+      ".how-to-play-button"
+    );
 
-    if (!form || !nameInput || !errorElement) {
+    if (!form || !nameInput || !errorElement || !howToPlayButton) {
       throw new Error("Menu elements could not be created.");
     }
+
+    howToPlayButton.addEventListener("click", () => {
+      const selectedClass = form.querySelector<HTMLInputElement>(
+        'input[name="player-class"]:checked'
+      );
+      this.onShowHowToPlay(
+        selectedClass ? (selectedClass.value as PlayerClass) : null
+      );
+    });
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();

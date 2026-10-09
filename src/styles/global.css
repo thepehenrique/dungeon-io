@@ -216,22 +216,137 @@ legend {
   text-align: center;
 }
 
-.play-button {
-  justify-self: center;
+.menu-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.play-button,
+.how-to-play-button,
+.tutorial-confirm-button {
   min-width: 220px;
-  border: 1px solid #e6c87a;
   padding: 15px 28px;
-  color: #16130c;
-  background: #e6c87a;
   cursor: pointer;
   font: 800 16px/1 inherit;
   letter-spacing: 0.12em;
   transition: filter 150ms ease, transform 150ms ease;
 }
 
-.play-button:hover {
+.play-button,
+.tutorial-confirm-button {
+  border: 1px solid #e6c87a;
+  color: #16130c;
+  background: #e6c87a;
+}
+
+.how-to-play-button {
+  border: 1px solid #596677;
+  color: #c7d0da;
+  background: #151c26;
+}
+
+.play-button:hover,
+.how-to-play-button:hover,
+.tutorial-confirm-button:hover,
+.play-button:focus-visible,
+.how-to-play-button:focus-visible,
+.tutorial-confirm-button:focus-visible {
+  outline: none;
   filter: brightness(1.08);
   transform: translateY(-2px);
+}
+
+.how-to-play-screen {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  pointer-events: auto;
+  background: rgba(3, 5, 8, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.how-to-play-panel {
+  width: min(780px, 100%);
+  padding: clamp(26px, 4vw, 44px);
+  border: 1px solid #806d3d;
+  background:
+    radial-gradient(circle at 50% 0, rgba(230, 200, 122, 0.1), transparent 40%),
+    #0c1118;
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.how-to-play-panel h2 {
+  margin: 6px 0 0;
+  color: #f0e7cd;
+  font-family: Georgia, serif;
+  font-size: clamp(30px, 5vw, 46px);
+  letter-spacing: 0.08em;
+}
+
+.how-to-play-intro {
+  margin: 12px 0 28px;
+  color: #9da8b5;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.control-group {
+  border: 1px solid #303a47;
+  padding: 18px;
+  background: #101721;
+}
+
+.control-group h3 {
+  margin: 0 0 14px;
+  color: #c9b681;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.control-row {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #222b36;
+  color: #c7d0da;
+  font-size: 14px;
+}
+
+.control-row--ability {
+  color: #e6c87a;
+}
+
+.key-combo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key-combo kbd {
+  min-width: 30px;
+  border: 1px solid #657284;
+  border-bottom-width: 3px;
+  padding: 6px 7px 5px;
+  color: #eef2f6;
+  background: #1a2330;
+  font: 800 11px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-align: center;
 }
 
 .level-up-screen {
@@ -692,6 +807,26 @@ legend {
 
   .menu-intro {
     margin-bottom: 20px;
+  }
+
+  .menu-actions {
+    flex-direction: column-reverse;
+  }
+
+  .menu-actions button {
+    width: 100%;
+  }
+
+  .how-to-play-screen {
+    place-items: start center;
+  }
+
+  .how-to-play-panel {
+    padding: 24px;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
   }
 
   .class-grid {

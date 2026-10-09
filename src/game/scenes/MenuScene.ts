@@ -2,10 +2,17 @@ import Phaser from 'phaser';
 
 import { SCENE_KEYS } from '../constants/game';
 import { getGameSession } from '../state/getGameSession';
+import {
+  hasSeenTutorial,
+  markTutorialAsSeen,
+} from '../state/tutorialProgress';
+import type { PlayerClass } from '../types/player';
+import { HowToPlayView } from '../../ui/how-to-play/HowToPlayView';
 import { MenuView } from '../../ui/menu/MenuView';
 
 export class MenuScene extends Phaser.Scene {
   private menuView: MenuView | null = null;
+  private howToPlayView: HowToPlayView | null = null;
 
   constructor() {
     super(SCENE_KEYS.MENU);
@@ -20,14 +27,72 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard?.clearCaptures();
     getGameSession(this).clear();
-    this.menuView = new MenuView(uiRoot, ({ playerName, playerClass }) => {
-      getGameSession(this).startRun(playerName, playerClass);
-      this.scene.start(SCENE_KEYS.DUNGEON);
+    this.menuView = new MenuView(uiRoot, {
+      onSubmit: ({ playerName, playerClass }) => {
+        if (hasSeenTutorial()) {
+          this.startRun(playerName, playerClass);
+          return;
+        }
+
+        this.showFirstRunTutorial(
+          uiRoot,
+          playerClass,
+          () => this.startRun(playerName, playerClass),
+        );
+      },
+      onShowHowToPlay: (playerClass) => {
+        this.showMenuTutorial(uiRoot, playerClass);
+      },
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.howToPlayView?.destroy();
+      this.howToPlayView = null;
       this.menuView?.destroy();
       this.menuView = null;
     });
+  }
+
+  private showFirstRunTutorial(
+    root: HTMLElement,
+    playerClass: PlayerClass,
+    startRun: () => void,
+  ): void {
+    if (this.howToPlayView) {
+      return;
+    }
+
+    this.howToPlayView = new HowToPlayView(root, playerClass, {
+      confirmLabel: 'COMEÇAR A AVENTURA',
+      onConfirm: () => {
+        markTutorialAsSeen();
+        this.closeHowToPlay();
+        startRun();
+      },
+    });
+  }
+
+  private showMenuTutorial(
+    root: HTMLElement,
+    playerClass: PlayerClass | null,
+  ): void {
+    if (this.howToPlayView) {
+      return;
+    }
+
+    this.howToPlayView = new HowToPlayView(root, playerClass, {
+      confirmLabel: 'VOLTAR AO MENU',
+      onConfirm: () => this.closeHowToPlay(),
+    });
+  }
+
+  private closeHowToPlay(): void {
+    this.howToPlayView?.destroy();
+    this.howToPlayView = null;
+  }
+
+  private startRun(playerName: string, playerClass: PlayerClass): void {
+    getGameSession(this).startRun(playerName, playerClass);
+    this.scene.start(SCENE_KEYS.DUNGEON);
   }
 }
