@@ -8,10 +8,10 @@ export const WARRIOR_TEXTURE_KEYS = {
 
 export const WARRIOR_SPRITE = {
   frameSize: 256,
-  scale: 0.25,
-  bodyRadius: 70,
-  bodyOffsetX: 58,
-  bodyOffsetY: 95,
+  scale: 0.275,
+  bodyRadius: 64,
+  bodyOffsetX: 64,
+  bodyOffsetY: 98,
 } as const;
 
 const WARRIOR_FACINGS = ['right', 'left', 'down', 'up'] as const;
@@ -35,10 +35,10 @@ const ATTACK_FRAME_RANGES: Readonly<Record<WarriorFacing, readonly [number, numb
 const BLOCK_FRAME_RANGES: Readonly<
   Record<WarriorFacing, readonly [number, number]>
 > = {
-  right: [12, 14],
-  left: [6, 8],
-  down: [0, 2],
-  up: [18, 20],
+  right: [12, 15],
+  left: [6, 9],
+  down: [0, 3],
+  up: [18, 21],
 };
 
 export function getWarriorWalkAnimationKey(facing: WarriorFacing): string {

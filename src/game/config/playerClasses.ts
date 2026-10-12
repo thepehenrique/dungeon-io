@@ -7,7 +7,7 @@ export const PLAYER_CLASSES: Readonly<Record<PlayerClass, PlayerClassDefinition>
     label: 'Guerreiro',
     fantasy: 'Resistente e implacável no combate próximo.',
     portraitAssetPath: '/assets/characters/warrior/Warrior_Shield_Walk.png',
-    portraitScale: 0.8,
+    portraitScale: 0.88,
     color: 0x4d8dff,
     cssColor: '#4d8dff',
     baseStats: {
