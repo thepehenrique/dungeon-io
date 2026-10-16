@@ -8,6 +8,7 @@ import {
 import type { ChestSpawnDefinition } from '../types/chest';
 import { EnemyType, type EnemySpawnDefinition } from '../types/enemy';
 import { ItemRarity } from '../types/item';
+import { findPlayerSpawnPoints } from './spawnPlacement';
 
 interface TiledProperty {
   readonly name: string;
@@ -94,6 +95,34 @@ export class TilemapDungeon {
     visionLayer.setScale(DUNGEON_MAP.scale).setVisible(false);
     this.visionBlockers = this.readBlockerRectangles(visionLayer, true);
     this.readSpawnPoints(map);
+    const seed = this.playerSpawns[0];
+    const tileWidth = map.tileWidth * DUNGEON_MAP.scale;
+    const tileHeight = map.tileHeight * DUNGEON_MAP.scale;
+    const occupied = [...this.chestSpawns, ...this.keySpawns, ...this.exitSpawns];
+    const reservations = new Set<string>();
+    for (const point of occupied) {
+      const x = Math.floor(point.x / tileWidth);
+      const y = Math.floor(point.y / tileHeight);
+      // Exit artwork extends three cells above its anchor.
+      const isExit = this.exitSpawns.includes(point as MapPoint);
+      for (let dy = isExit ? -3 : 0; dy <= (isExit ? 1 : 0); dy += 1) {
+        for (let dx = isExit ? -1 : 0; dx <= (isExit ? 1 : 0); dx += 1) {
+          reservations.add(`${x + dx},${y + dy}`);
+        }
+      }
+    }
+    const floor = map.getLayer('Floor');
+    const traps = map.getLayer('Traps');
+    this.playerSpawns = findPlayerSpawnPoints({
+      width: map.width,
+      height: map.height,
+      tileWidth,
+      tileHeight,
+      isBlocked: (x, y) => (collisionLayer.layer.data[y]?.[x]?.index ?? -1) !== -1,
+      hasFloor: (x, y) => (floor?.data[y]?.[x]?.index ?? -1) !== -1,
+      isReserved: (x, y) => reservations.has(`${x},${y}`) ||
+        (traps?.data[y]?.[x]?.index ?? -1) !== -1,
+    }, seed);
     this.map = map;
   }
 

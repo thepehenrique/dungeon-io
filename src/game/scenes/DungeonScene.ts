@@ -4,7 +4,6 @@ import { SceneMusic } from '../audio/SceneMusic';
 import { DUNGEON_MUSIC } from '../config/audio';
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
-import { PLAYER_SPAWN_SAFETY } from '../config/dungeonAssets';
 import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
 import { HUD_LAYOUT } from '../config/hud';
 import { PLAYER_CLASSES } from '../config/playerClasses';
@@ -15,7 +14,8 @@ import {
   GAME_WIDTH,
   SCENE_KEYS,
 } from '../constants/game';
-import { TilemapDungeon, type MapPoint } from '../dungeon/TilemapDungeon';
+import { TilemapDungeon } from '../dungeon/TilemapDungeon';
+import { selectRunSpawns } from '../dungeon/spawnPlacement';
 import { Enemy } from '../enemies/Enemy';
 import { EnemyManager } from '../enemies/EnemyManager';
 import { ChestManager } from '../items/chests/ChestManager';
@@ -95,7 +95,7 @@ export class DungeonScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, dungeon.width, dungeon.height);
     this.cameras.main.setBounds(0, 0, dungeon.width, dungeon.height);
 
-    const playerSpawn = selectPlayerSpawn(
+    const { playerSpawn, enemySpawns } = selectRunSpawns(
       dungeon.getPlayerSpawns(),
       dungeon.getEnemySpawns(),
     );
@@ -251,7 +251,7 @@ export class DungeonScene extends Phaser.Scene {
           sourcePosition: new Phaser.Math.Vector2(attacker.x, attacker.y),
         });
       },
-      dungeon.getEnemySpawns(),
+      enemySpawns,
     );
     this.waveCountdownText = this.add
       .text(
@@ -716,64 +716,4 @@ export class DungeonScene extends Phaser.Scene {
     this.tweens.resumeAll();
     this.isChoosingUpgrade = false;
   }
-}
-
-function selectPlayerSpawn(
-  spawns: readonly MapPoint[],
-  enemySpawns: readonly { readonly x: number; readonly y: number }[],
-): MapPoint {
-  if (spawns.length === 0) {
-    throw new Error('The dungeon requires at least one PlayerSpawns point.');
-  }
-
-  const safeSpawns = spawns.filter((spawn) =>
-    spawn.safeStart &&
-    enemySpawns.every((enemy) =>
-      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y) >
-        PLAYER_SPAWN_SAFETY.minimumEnemyDistance ** 2,
-    ),
-  );
-  const selected = safeSpawns.length > 0
-    ? safeSpawns[Math.floor(Math.random() * safeSpawns.length)]
-    : findSpawnFarthestFromEnemies(spawns, enemySpawns);
-
-  if (!selected) {
-    throw new Error('Unable to choose a player spawn.');
-  }
-
-  return selected;
-}
-
-function findSpawnFarthestFromEnemies(
-  spawns: readonly MapPoint[],
-  enemySpawns: readonly { readonly x: number; readonly y: number }[],
-): MapPoint | undefined {
-  if (enemySpawns.length === 0) {
-    return spawns[0];
-  }
-
-  return spawns.reduce<MapPoint | undefined>((safest, spawn) => {
-    if (!safest) {
-      return spawn;
-    }
-
-    const nearestEnemyDistance = minimumEnemyDistanceSquared(spawn, enemySpawns);
-    const safestNearestEnemyDistance = minimumEnemyDistanceSquared(
-      safest,
-      enemySpawns,
-    );
-
-    return nearestEnemyDistance > safestNearestEnemyDistance ? spawn : safest;
-  }, undefined);
-}
-
-function minimumEnemyDistanceSquared(
-  spawn: MapPoint,
-  enemySpawns: readonly { readonly x: number; readonly y: number }[],
-): number {
-  return Math.min(
-    ...enemySpawns.map((enemy) =>
-      Phaser.Math.Distance.Squared(spawn.x, spawn.y, enemy.x, enemy.y),
-    ),
-  );
 }

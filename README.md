@@ -54,6 +54,9 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Fluxo `Boot → Menu → Dungeon → Game Over`.
 - Nome e classe são validados antes de iniciar.
 - Uma nova run é criada no `GameSession`, sem uso de `localStorage`.
+- A cada run, o spawn do jogador é sorteado entre pontos livres e alcançáveis
+  por todo o mapa. Inimigos próximos são reposicionados para manter mais de
+  528 pixels de distância inicial, preservando a quantidade de mobs.
 - A dungeon exibe o nome e a classe selecionada.
 - O jogador pode se mover com WASD e acompanha a posição do mouse.
 - Guerreiro, Arqueiro e Mago possuem vida, dano, defesa, velocidade, velocidade de ataque e alcance próprios.
