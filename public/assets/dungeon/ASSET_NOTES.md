@@ -25,14 +25,11 @@ adds the object layers expected by Phaser:
 - `Regions`
 - `VisionBlockers`
 
-The importer preserves the original `Gameplay` layer for editing, creates 36
-enemy points across the nine combat rooms, converts the three chest markers,
-and uses the supplied key and player start. It also creates nine validated exit
-door candidates, one per combat room; the game randomly chooses one on each
-run. Every candidate has enough clear, reachable floor for the full door art
-and its approach, without overlapping runtime entities or blocked visual
-layers. The Vestibulo remains a safe starting room, with no enemy inside the
-configured 11-tile safety radius.
+The generator preserves `Gameplay`, creates enemies from regional budgets
+(36 in catacombs and 14 Goblins in the connected den), and converts the existing
+chest/key/player markers. Runtime player, key and portal candidates are derived
+from reachable free catacomb floor; enemy relocation preserves each region.
+See [the map guide](ARCHITECTURE_GUIDE.md) for authoring and validation details.
 
 Original visual layers are preserved as `Floor`, `Water`, `Walls`, `Details`,
 `Props`, `Doors`, `Fire` and `Traps`. `Collision`, `Gameplay` and
@@ -43,3 +40,14 @@ their upper visual tiles remain non-physical and they do not block vision.
 The source PNG files are unchanged. `Composicao.png` contains integral
 compositions made from the original CraftPix pieces, including 3×3 portals and
 complete multi-tile props.
+
+## Supplied Goblin Den assets
+
+The two new sheets were supplied by the user; no third-party provenance or
+license is inferred for them. Originals are preserved in
+`assets-source/goblin-den/`, outside the published directory. The panorama was
+a composition reference. Prepared `goblin-cave-16x16.png` and
+`goblin-props-16x16.png` use explicit crops and nearest-neighbor, with a
+`goblin-prefabs.json` manifest. Rebuild using
+`python3 scripts/prepare_goblin_den_assets.py` (requires Pillow).
+The source now contains 15 rooms and is 120 × 58 despite its historical filename.

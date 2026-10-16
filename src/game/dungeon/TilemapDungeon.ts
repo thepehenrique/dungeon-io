@@ -9,6 +9,7 @@ import type { ChestSpawnDefinition } from '../types/chest';
 import { EnemyType, type EnemySpawnDefinition } from '../types/enemy';
 import { ItemRarity } from '../types/item';
 import { findExitSpawnPoints, findPlayerSpawnPoints, type SpawnGrid } from './spawnPlacement';
+import { isDungeonRegion, REGION_CONFIG, type DungeonRegion } from './DungeonRegion';
 
 interface TiledProperty {
   readonly name: string;
@@ -16,6 +17,7 @@ interface TiledProperty {
 }
 
 export interface MapPoint {
+  readonly region?: DungeonRegion;
   readonly id: string;
   readonly x: number;
   readonly y: number;
@@ -39,6 +41,8 @@ export class TilemapDungeon {
   private keySpawns: MapPoint[] = [];
   private exitSpawns: MapPoint[] = [];
   private visionBlockers: VisionBlocker[] = [];
+  private regions: (VisionBlocker & { region: DungeonRegion })[] = [];
+  private enemySpawnCandidates: MapPoint[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     this.walls = scene.physics.add.staticGroup();
@@ -94,6 +98,21 @@ export class TilemapDungeon {
 
     visionLayer.setScale(DUNGEON_MAP.scale).setVisible(false);
     this.visionBlockers = this.readBlockerRectangles(visionLayer, true);
+    this.regions = (map.getObjectLayer('Gameplay')?.objects ?? [])
+      .filter((object) => object.type === 'region')
+      .map((object) => {
+        const region = this.getProperty((object.properties ?? []) as TiledProperty[], 'region');
+        if (!isDungeonRegion(region)) {
+          throw new Error(`Unknown dungeon region: ${String(region)}`);
+        }
+        return {
+          region,
+          x: (object.x ?? 0) * DUNGEON_MAP.scale,
+          y: (object.y ?? 0) * DUNGEON_MAP.scale,
+          width: (object.width ?? 0) * DUNGEON_MAP.scale,
+          height: (object.height ?? 0) * DUNGEON_MAP.scale,
+        };
+      });
     this.readSpawnPoints(map);
     const seed = this.playerSpawns[0];
     const tileWidth = map.tileWidth * DUNGEON_MAP.scale;
@@ -116,7 +135,12 @@ export class TilemapDungeon {
       isReserved: (x, y) => reservations.has(`${x},${y}`) ||
         (traps?.data[y]?.[x]?.index ?? -1) !== -1,
     };
-    this.playerSpawns = findPlayerSpawnPoints(grid, seed);
+    this.enemySpawnCandidates = findPlayerSpawnPoints(grid, seed).map((point) => ({
+      ...point, region: this.getRegionAt(point.x, point.y) ?? undefined,
+    }));
+    this.playerSpawns = this.enemySpawnCandidates.filter((point) =>
+      point.region !== undefined && REGION_CONFIG[point.region].objectiveSpawns,
+    );
     this.keySpawns = this.playerSpawns.map(({ id, x, y }) => ({
       id: `Key_${id}`,
       x,
@@ -147,6 +171,16 @@ export class TilemapDungeon {
 
   getEnemySpawns(): readonly EnemySpawnDefinition[] {
     return this.enemySpawns;
+  }
+
+  getEnemySpawnCandidates(): readonly MapPoint[] {
+    return this.enemySpawnCandidates;
+  }
+
+  /** World coordinates; two rectangle checks, independent of map size. */
+  getRegionAt(x: number, y: number): DungeonRegion | null {
+    return this.regions.find((area) => x >= area.x && y >= area.y &&
+      x < area.x + area.width && y < area.y + area.height)?.region ?? null;
   }
 
   getChestSpawns(): readonly ChestSpawnDefinition[] {
@@ -271,9 +305,18 @@ export class TilemapDungeon {
       const properties = (object.properties ?? []) as TiledProperty[];
       const enemyType = this.getProperty(properties, 'enemyType');
       const level = this.getProperty(properties, 'level');
+      const region = this.getRegionAt(x, y);
+      if (!region || this.getProperty(properties, 'region') !== region) {
+        throw new Error(`Enemy ${object.name} has an invalid region.`);
+      }
 
       if (typeof enemyType === 'string' && this.isEnemyType(enemyType)) {
+        const pool: readonly EnemyType[] = REGION_CONFIG[region].enemyPool;
+        if (!pool.includes(enemyType)) {
+          throw new Error(`Enemy ${enemyType} is not allowed in ${region}.`);
+        }
         this.enemySpawns.push({
+          region,
           type: enemyType,
           x,
           y,

@@ -58,6 +58,8 @@ export const DUNGEON_TILESETS = [
     file: 'trap_animation.png',
   },
   { name: 'Composicao', key: 'dungeon-composition', file: 'Composicao.png' },
+  { name: 'GoblinCave', key: 'goblin-cave', file: 'goblin-cave-16x16.png' },
+  { name: 'GoblinProps', key: 'goblin-props', file: 'goblin-props-16x16.png' },
 ] as const;
 
 export const DUNGEON_RENDER_LAYERS = [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adapt the Catacumbas Tiled source map to the Phaser runtime contract."""
+"""Adapt the connected Tiled dungeon source to the Phaser runtime contract."""
 
 from __future__ import annotations
 
@@ -17,8 +17,10 @@ OUTPUT = ASSET_DIR / "dungeon-01.tmj"
 
 TILE_SIZE = 16
 SAFE_SPAWN_DISTANCE_TILES = 11
-ENEMY_COUNT = 36
-ENEMY_TYPES = ("GOBLIN", "SKELETON_WARRIOR", "ZOMBIE")
+REGION_ENEMY_POOLS = {
+    "catacombs": ("GOBLIN", "SKELETON_WARRIOR", "ZOMBIE"),
+    "goblin_den": ("GOBLIN",),
+}
 COLLISION_MARKER_GID = 607
 COMPOSITION_TILESET_NAME = "Composicao"
 # Only the ground-contact cells are physical. Upper artwork remains free so
@@ -176,6 +178,7 @@ def choose_room_spawns(
     collision: list[int],
     traps: list[int],
     player_position: tuple[float, float],
+    count: int = 4,
 ) -> list[tuple[float, float]]:
     min_x = ceil(float(room["x"]) / TILE_SIZE) + 1
     min_y = ceil(float(room["y"]) / TILE_SIZE) + 1
@@ -186,7 +189,8 @@ def choose_room_spawns(
     candidates: list[tuple[int, int]] = []
     for tile_y in range(min_y, max_y + 1):
         for tile_x in range(min_x, max_x + 1):
-            if not is_open_cell(tile_x, tile_y, width, height, collision, traps):
+            if not all(is_open_cell(tile_x+dx, tile_y+dy, width, height, collision, traps)
+                       for dx, dy in ((0,0), (-1,0), (1,0), (0,-1), (0,1))):
                 continue
             x = (tile_x + 0.5) * TILE_SIZE
             y = (tile_y + 0.5) * TILE_SIZE
@@ -194,8 +198,8 @@ def choose_room_spawns(
                 continue
             candidates.append((tile_x, tile_y))
 
-    if len(candidates) < 4:
-        raise ValueError(f"Room {room['name']!r} has fewer than four enemy cells")
+    if len(candidates) < count:
+        raise ValueError(f"Room {room['name']!r} needs {count} enemy cells")
 
     anchors = (
         (min_x, min_y),
@@ -204,7 +208,8 @@ def choose_room_spawns(
         (max_x, max_y),
     )
     selected: list[tuple[int, int]] = []
-    for anchor_x, anchor_y in anchors:
+    for index in range(count):
+        anchor_x, anchor_y = anchors[index % len(anchors)]
         available = [candidate for candidate in candidates if candidate not in selected]
         selected.append(
             min(
@@ -310,7 +315,18 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
     vision_collision = list(collision_layer["data"])
     width = int(map_data["width"])
     height = int(map_data["height"])
+    for layer in map_data["layers"]:
+        if layer.get("type") == "tilelayer" and (
+            layer["width"] != width or layer["height"] != height
+            or len(layer["data"]) != width * height
+        ):
+            raise ValueError(f"Invalid dimensions for layer {layer['name']}")
     gameplay_objects = list(gameplay["objects"])
+    for obj in gameplay_objects:
+        if properties_by_name(obj).get("blocksVision") is False:
+            for y in range(int(obj["y"] // TILE_SIZE), ceil((obj["y"] + obj["height"]) / TILE_SIZE)):
+                for x in range(int(obj["x"] // TILE_SIZE), ceil((obj["x"] + obj["width"]) / TILE_SIZE)):
+                    vision_collision[y * width + x] = 0
 
     # Interactive runtime entities replace their static Tiled artwork. Keeping
     # both would leave a closed chest/key underneath after interaction.
@@ -352,11 +368,33 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
         room
         for room in rooms
         if room.get("name") not in {"Vestibulo", "Segredo"}
+        and properties_by_name(room).get("combat", True)
     ]
-    if len(combat_rooms) != ENEMY_COUNT // 4:
-        raise ValueError("The Catacumbas layout must expose nine combat rooms")
+    region_definitions = [o for o in gameplay_objects if o.get("type") == "region"]
+    room_budgets = {}
+    for region in region_definitions:
+        config = properties_by_name(region)
+        region_id = config["region"]
+        if region_id not in REGION_ENEMY_POOLS:
+            raise ValueError(f"Unknown enemy region: {region_id}")
+        regional_rooms = [r for r in combat_rooms if properties_by_name(r).get("region") == region_id]
+        budget = int(config.get("enemyBudget", 0))
+        if budget < 0:
+            raise ValueError("Regional enemy budgets cannot be negative")
+        if budget and not regional_rooms:
+            raise ValueError(f"Region {region_id} has a budget but no combat rooms")
+        weights = [int(properties_by_name(r).get("enemyWeight", 1)) for r in regional_rooms]
+        if any(w <= 0 for w in weights):
+            raise ValueError("Combat room weights must be positive")
+        allocated = [budget * w // sum(weights) for w in weights]
+        for i in range(budget - sum(allocated)):
+            allocated[i % len(allocated)] += 1
+        room_budgets.update({r['id']: n for r,n in zip(regional_rooms, allocated)})
+    if any(r['id'] not in room_budgets for r in combat_rooms):
+        raise ValueError("Every combat room must belong to a configured region")
 
-    next_object_id = int(map_data.get("nextobjectid", 1))
+    next_object_id = max(int(map_data.get("nextobjectid", 1)),
+                         max((o["id"] for o in gameplay_objects), default=0) + 1)
 
     def next_id() -> int:
         nonlocal next_object_id
@@ -378,6 +416,8 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
     enemy_spawns: list[dict[str, object]] = []
     enemy_index = 0
     for room in combat_rooms:
+        region_id = properties_by_name(room)["region"]
+        pool = REGION_ENEMY_POOLS[region_id]
         for x, y in choose_room_spawns(
             room,
             width,
@@ -385,8 +425,9 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
             collision,
             traps,
             player_position,
+            room_budgets[room["id"]],
         ):
-            enemy_type = ENEMY_TYPES[enemy_index % len(ENEMY_TYPES)]
+            enemy_type = pool[enemy_index % len(pool)]
             enemy_spawns.append(
                 point_object(
                     next_id(),
@@ -396,6 +437,7 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
                     y,
                     [
                         tiled_property("enemyType", enemy_type, "string"),
+                        tiled_property("region", region_id, "string"),
                         tiled_property("level", 1, "int"),
                     ],
                 )
@@ -438,7 +480,9 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
     ]
     floor_data = list(find_layer(map_data, "Floor")["data"])
     exit_spawns = []
-    for index, room in enumerate(combat_rooms, start=1):
+    for index, room in enumerate(
+        [r for r in combat_rooms if properties_by_name(r).get("region") == "catacombs"], start=1
+    ):
         tile_x, tile_y = choose_exit_cell(
             room,
             width,
@@ -462,14 +506,15 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
         )
 
     region_objects: list[dict[str, object]] = []
-    for room in rooms:
+    for room in region_definitions:
         region = deepcopy(room)
         region["id"] = next_id()
         region["type"] = "REGION"
         region_objects.append(region)
 
     vision_layer = deepcopy(collision_layer)
-    vision_layer["id"] = int(map_data.get("nextlayerid", 11))
+    vision_layer["id"] = max(int(map_data.get("nextlayerid", 1)),
+                             max(l["id"] for l in map_data["layers"]) + 1)
     vision_layer["name"] = "VisionBlockers"
     vision_layer["visible"] = False
     vision_layer["data"] = vision_collision
@@ -495,6 +540,11 @@ def build_runtime_map(source: dict[str, object]) -> dict[str, object]:
         cell = (int(float(spawn["x"]) // TILE_SIZE), int(float(spawn["y"]) // TILE_SIZE))
         if cell not in visited:
             raise ValueError(f"Enemy spawn is unreachable: {spawn['name']} at {cell}")
+        region_id = properties_by_name(spawn)["region"]
+        areas = [r for r in region_definitions if properties_by_name(r)["region"] == region_id]
+        if not any(r['x'] <= spawn['x'] < r['x'] + r['width']
+                   and r['y'] <= spawn['y'] < r['y'] + r['height'] for r in areas):
+            raise ValueError(f"Enemy spawn outside its region: {spawn['name']}")
 
     for spawn in exit_spawns:
         cell = (int(float(spawn["x"]) // TILE_SIZE), int(float(spawn["y"]) // TILE_SIZE))
@@ -527,7 +577,10 @@ def main() -> None:
     print(f"Generated {OUTPUT}")
     print(
         f"Map: {runtime_map['width']}x{runtime_map['height']}; "
-        f"rooms: 11; enemies: {ENEMY_COUNT}; chests: 3; keys: 1; "
+        f"rooms: {sum(o.get('type') == 'room' for o in find_layer(runtime_map, 'Gameplay')['objects'])}; "
+        f"enemies: {len(find_layer(runtime_map, 'EnemySpawns')['objects'])}; "
+        f"chests: {len(find_layer(runtime_map, 'ChestSpawns')['objects'])}; "
+        f"keys: {len(find_layer(runtime_map, 'KeySpawns')['objects'])}; "
         f"exits: {len(find_layer(runtime_map, 'ExitGates')['objects'])}; "
         f"solid prop cells: {solid_prop_cells}"
     )

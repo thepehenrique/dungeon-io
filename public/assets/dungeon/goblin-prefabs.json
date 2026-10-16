@@ -1,0 +1,197 @@
+{
+  "tent": {
+    "x": 0,
+    "y": 0,
+    "width": 4,
+    "height": 3,
+    "solid": true,
+    "sourceCrop": [
+      14,
+      160,
+      215,
+      309
+    ]
+  },
+  "tent_large": {
+    "x": 4,
+    "y": 0,
+    "width": 4,
+    "height": 3,
+    "solid": true,
+    "sourceCrop": [
+      220,
+      162,
+      444,
+      318
+    ]
+  },
+  "crate": {
+    "x": 8,
+    "y": 0,
+    "width": 2,
+    "height": 2,
+    "solid": true,
+    "sourceCrop": [
+      937,
+      311,
+      1008,
+      404
+    ]
+  },
+  "barrel": {
+    "x": 10,
+    "y": 0,
+    "width": 2,
+    "height": 2,
+    "solid": true,
+    "sourceCrop": [
+      274,
+      424,
+      354,
+      508
+    ]
+  },
+  "sacks": {
+    "x": 12,
+    "y": 0,
+    "width": 2,
+    "height": 1,
+    "solid": false,
+    "sourceCrop": [
+      14,
+      397,
+      138,
+      447
+    ]
+  },
+  "table": {
+    "x": 0,
+    "y": 3,
+    "width": 3,
+    "height": 2,
+    "solid": true,
+    "sourceCrop": [
+      720,
+      607,
+      867,
+      706
+    ]
+  },
+  "campfire": {
+    "x": 3,
+    "y": 3,
+    "width": 2,
+    "height": 2,
+    "solid": false,
+    "sourceCrop": [
+      135,
+      631,
+      245,
+      737
+    ]
+  },
+  "brazier": {
+    "x": 5,
+    "y": 3,
+    "width": 1,
+    "height": 2,
+    "solid": true,
+    "sourceCrop": [
+      270,
+      508,
+      351,
+      635
+    ]
+  },
+  "palisade": {
+    "x": 6,
+    "y": 3,
+    "width": 3,
+    "height": 3,
+    "solid": true,
+    "sourceCrop": [
+      838,
+      8,
+      981,
+      130
+    ]
+  },
+  "banner": {
+    "x": 9,
+    "y": 3,
+    "width": 2,
+    "height": 3,
+    "solid": true,
+    "sourceCrop": [
+      803,
+      422,
+      906,
+      599
+    ]
+  },
+  "mushrooms": {
+    "x": 11,
+    "y": 3,
+    "width": 2,
+    "height": 1,
+    "solid": false,
+    "sourceCrop": [
+      1029,
+      830,
+      1149,
+      908
+    ]
+  },
+  "rock": {
+    "x": 13,
+    "y": 3,
+    "width": 2,
+    "height": 3,
+    "solid": true,
+    "sourceCrop": [
+      17,
+      732,
+      110,
+      883
+    ]
+  },
+  "bones": {
+    "x": 0,
+    "y": 6,
+    "width": 2,
+    "height": 1,
+    "solid": false,
+    "sourceCrop": [
+      945,
+      1003,
+      1057,
+      1065
+    ]
+  },
+  "puddle": {
+    "x": 2,
+    "y": 6,
+    "width": 2,
+    "height": 2,
+    "solid": false,
+    "sourceCrop": [
+      394,
+      1133,
+      493,
+      1238
+    ]
+  },
+  "arch": {
+    "x": 4,
+    "y": 6,
+    "width": 3,
+    "height": 3,
+    "solid": false,
+    "sourceCrop": [
+      274,
+      12,
+      427,
+      166
+    ]
+  }
+}

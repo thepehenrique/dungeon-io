@@ -49,6 +49,16 @@ import { InventoryView } from '../../ui/inventory/InventoryView';
 import { PauseMenuView } from '../../ui/pause/PauseMenuView';
 
 export class DungeonScene extends Phaser.Scene {
+  private dungeon: TilemapDungeon | null = null;
+  private lastRegion: ReturnType<TilemapDungeon['getRegionAt']> = null;
+  private goblinDenDiscovered = false;
+
+  getPlayerRegion(): ReturnType<TilemapDungeon['getRegionAt']> {
+    return this.player && this.dungeon
+      ? this.dungeon.getRegionAt(this.player.x, this.player.y)
+      : null;
+  }
+
   private pauseMenu: PauseMenuView | null = null;
   private pauseCaptures: number[] = [];
   private readonly handlePauseKey = (event: KeyboardEvent): void => {
@@ -97,6 +107,7 @@ export class DungeonScene extends Phaser.Scene {
 
   create(): void {
     this.gameOverPending = false;
+    this.goblinDenDiscovered = false;
     const session = getGameSession(this);
     const run = session.getRun();
 
@@ -109,6 +120,7 @@ export class DungeonScene extends Phaser.Scene {
     this.dungeonMusic.start();
 
     const dungeon = new TilemapDungeon(this);
+    this.dungeon = dungeon;
     dungeon.create();
     this.physics.world.setBounds(0, 0, dungeon.width, dungeon.height);
     this.cameras.main.setBounds(0, 0, dungeon.width, dungeon.height);
@@ -116,6 +128,8 @@ export class DungeonScene extends Phaser.Scene {
     const { playerSpawn, enemySpawns } = selectRunSpawns(
       dungeon.getPlayerSpawns(),
       dungeon.getEnemySpawns(),
+      Math.random,
+      dungeon.getEnemySpawnCandidates(),
     );
 
     const player = new Player(this, playerSpawn.x, playerSpawn.y, {
@@ -124,6 +138,7 @@ export class DungeonScene extends Phaser.Scene {
       playerClass: run.playerClass,
     });
     this.player = player;
+    this.lastRegion = this.getPlayerRegion();
     this.visionSystem = new VisionSystem(
       this,
       player,
@@ -369,6 +384,8 @@ export class DungeonScene extends Phaser.Scene {
       this.playerController?.destroy();
       this.playerController = null;
       this.projectileManager = null;
+      this.dungeon = null;
+      this.lastRegion = null;
       this.dropSystem = null;
       this.enemyManager = null;
       this.player = null;
@@ -423,6 +440,15 @@ export class DungeonScene extends Phaser.Scene {
     if (this.isInventoryOpen) {
       this.playerController?.discardActionPresses();
       return;
+    }
+
+    const region = this.getPlayerRegion();
+    if (region !== this.lastRegion) {
+      this.lastRegion = region;
+      if (region === 'goblin_den' && !this.goblinDenDiscovered) {
+        this.goblinDenDiscovered = true;
+        this.showRunAnnouncement('COVIL DOS GOBLINS', '');
+      }
     }
 
     this.playerController?.update(delta);

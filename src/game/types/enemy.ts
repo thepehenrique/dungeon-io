@@ -1,4 +1,5 @@
 import type { DropTableId } from './drop';
+import type { DungeonRegion } from '../dungeon/DungeonRegion';
 
 export enum EnemyType {
   Goblin = 'GOBLIN',
@@ -48,6 +49,7 @@ export interface EnemyDefinition {
 }
 
 export interface EnemySpawnDefinition {
+  readonly region?: DungeonRegion;
   readonly type: EnemyType;
   readonly x: number;
   readonly y: number;

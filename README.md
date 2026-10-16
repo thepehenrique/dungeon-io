@@ -114,7 +114,7 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - A dungeon fixa possui seis salas visualmente distintas, conectadas por corredores.
 - Tochas animadas, áreas escuras, teias, ossos, caixas e barris ambientam o mapa.
 - Caixas e barris funcionam como obstáculos físicos para jogador, inimigos e projéteis.
-- A dungeon utiliza um Tilemap inicial `38×28` editável no Tiled, com três salas, corredores, paredes, colisões e spawns em camadas próprias.
+- A dungeon utiliza um único Tilemap `120×58` editável no Tiled, com catacumbas e Covil dos Goblins conectados. Consulte [o guia do mapa](public/assets/dungeon/ARCHITECTURE_GUIDE.md) para edição, regiões e geração dos spawns.
 - É possível reiniciar a run ou voltar ao menu.
 
 O fluxo jogável básico do menu ao Game Over está funcional. A geração procedural de

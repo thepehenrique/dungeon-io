@@ -79,6 +79,7 @@ export function selectRunSpawns(
   candidates: readonly MapPoint[],
   enemies: readonly EnemySpawnDefinition[],
   random: () => number = Math.random,
+  enemyCandidates: readonly MapPoint[] = candidates,
 ): { playerSpawn: MapPoint; enemySpawns: EnemySpawnDefinition[] } {
   const playerSpawn = candidates[Math.floor(random() * candidates.length)];
   if (!playerSpawn) {
@@ -89,12 +90,13 @@ export function selectRunSpawns(
   const isSafe = (point: { x: number; y: number }) =>
     distanceSquared(point, playerSpawn) > PLAYER_SPAWN_SAFETY.minimumEnemyDistance ** 2;
   const occupied = enemies.filter(isSafe).map(({ x, y }) => ({ x, y }));
-  const safeCandidates = candidates.filter(isSafe);
+  const safeCandidates = enemyCandidates.filter(isSafe);
   const enemySpawns = enemies.map((enemy) => {
     if (isSafe(enemy)) {
       return enemy;
     }
     const available = safeCandidates.filter((point) =>
+      (!enemy.region || point.region === enemy.region) &&
       occupied.every((other) => distanceSquared(point, other) >= 48 ** 2),
     );
     const point = available[Math.floor(random() * available.length)];
