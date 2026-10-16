@@ -98,7 +98,7 @@ export class TilemapDungeon {
     const seed = this.playerSpawns[0];
     const tileWidth = map.tileWidth * DUNGEON_MAP.scale;
     const tileHeight = map.tileHeight * DUNGEON_MAP.scale;
-    const occupied = [...this.chestSpawns, ...this.keySpawns, ...this.exitSpawns];
+    const occupied = [...this.chestSpawns, ...this.exitSpawns];
     const reservations = new Set<string>();
     for (const point of occupied) {
       const x = Math.floor(point.x / tileWidth);
@@ -123,6 +123,11 @@ export class TilemapDungeon {
       isReserved: (x, y) => reservations.has(`${x},${y}`) ||
         (traps?.data[y]?.[x]?.index ?? -1) !== -1,
     }, seed);
+    this.keySpawns = this.playerSpawns.map(({ id, x, y }) => ({
+      id: `Key_${id}`,
+      x,
+      y,
+    }));
     this.map = map;
   }
 
