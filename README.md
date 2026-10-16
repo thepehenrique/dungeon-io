@@ -44,6 +44,7 @@ preservada para edição no Tiled.
 - `W`, `A`, `S`, `D`: movimentar o personagem.
 - Mouse: definir a direção para a qual o personagem olha.
 - Clique esquerdo: executar o ataque principal.
+- `TAB`: abrir o inventário para gerenciar itens e gastar pontos de upgrade.
 - `ESC`: pausar ou continuar o jogo. O menu de pausa permite ajustar o volume
   da música de fundo e voltar à seleção de personagem.
 
@@ -97,8 +98,10 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Inimigos derrotados concedem XP de acordo com seu tipo.
 - XP excedente é preservado ao subir de nível.
 - A quantidade necessária cresce conforme o nível da run.
-- Ao subir de nível, a ação pausa e três upgrades únicos são sorteados.
-- Somente uma melhoria pode ser escolhida antes de continuar.
+- Cada nível concede 1 ponto de upgrade, sem interromper a ação.
+- O inventário (TAB) exibe Vitalidade, Força, Agilidade, Velocidade de Ataque
+  e Defesa, todos começando no nível 0. Cada melhoria custa 1 ponto.
+- Pontos podem ser acumulados; níveis dos upgrades e pontos são zerados a cada run.
 - O HUD exibe nome, classe, nível, vida, XP e inimigos derrotados.
 - A morte encerra formalmente a run e exibe nível, kills e tempo sobrevivido.
 - Jogar novamente cria uma run limpa, com novos identificadores e progresso zerado.

@@ -1,4 +1,6 @@
 import { ITEM_RARITY_PRESENTATION } from '../../game/config/itemRarities';
+import { UPGRADE_DEFINITIONS } from '../../game/config/upgrades';
+import type { UpgradeId, UpgradeState } from '../../game/types/upgrade';
 import { getItemDefinition } from '../../game/items/ItemRegistry';
 import { formatItemDetails } from '../../game/items/itemPresentation';
 import type { EquipmentSystem } from '../../game/systems/EquipmentSystem';
@@ -13,6 +15,7 @@ import {
 } from '../../game/types/item';
 
 export interface InventoryActions {
+  readonly upgrade: (id: UpgradeId) => InventoryOperationResult;
   readonly equip: (index: number) => InventoryOperationResult;
   readonly unequip: (slot: EquipmentSlot) => InventoryOperationResult;
   readonly use: (definitionId: string) => InventoryOperationResult;
@@ -46,6 +49,7 @@ export class InventoryView {
     private readonly inventory: InventorySystem,
     private readonly equipment: EquipmentSystem,
     private readonly actions: InventoryActions,
+    private readonly upgrades: UpgradeState,
   ) {
     this.element = document.createElement('section');
     this.element.className = 'inventory-screen';
@@ -129,6 +133,16 @@ export class InventoryView {
       `;
     }).join('');
     const selected = this.getSelectedDefinition();
+    const upgradeOptions = UPGRADE_DEFINITIONS.map((upgrade) => `
+      <button class="inventory-upgrade" type="button" data-upgrade-id="${upgrade.id}"
+        ${this.upgrades.availablePoints < 1 ? 'disabled' : ''}>
+        <span class="inventory-upgrade__symbol" aria-hidden="true">${upgrade.symbol}</span>
+        <strong>${upgrade.label}</strong>
+        <span class="inventory-upgrade__level">Nível ${this.upgrades.levels[upgrade.id]}</span>
+        <small>${upgrade.description}</small>
+        <span class="inventory-upgrade__cost">Melhorar · 1 ponto</span>
+      </button>
+    `).join('');
 
     this.element.innerHTML = `
       <div class="inventory-panel">
@@ -137,6 +151,15 @@ export class InventoryView {
           <div class="inventory-capacity">${this.inventory.usedSlots} / ${this.inventory.capacity}</div>
           <button class="inventory-close" type="button" data-close-inventory>Fechar [TAB | ESC]</button>
         </header>
+
+        <section class="inventory-upgrades" aria-labelledby="inventory-upgrades-title">
+          <div class="inventory-upgrades__heading">
+            <h3 id="inventory-upgrades-title">Upgrades</h3>
+            <span class="inventory-upgrade-points" aria-live="polite">Pontos disponíveis: ${this.upgrades.availablePoints}</span>
+          </div>
+          <p>Ganhe 1 ponto a cada nível e escolha um atributo para melhorar.</p>
+          <div class="inventory-upgrade-grid">${upgradeOptions}</div>
+        </section>
 
         <div class="inventory-layout">
           <section class="inventory-section inventory-equipment-section">
@@ -229,6 +252,13 @@ export class InventoryView {
   }
 
   private bindEvents(): void {
+    for (const button of this.element.querySelectorAll<HTMLButtonElement>('[data-upgrade-id]')) {
+      button.addEventListener('click', () => {
+        const id = button.dataset.upgradeId as UpgradeId;
+        this.handleResult(this.actions.upgrade(id), false);
+        this.element.querySelector<HTMLButtonElement>(`[data-upgrade-id="${id}"]:not(:disabled)`)?.focus();
+      });
+    }
     this.element
       .querySelector<HTMLButtonElement>('[data-close-inventory]')
       ?.addEventListener('click', this.actions.close);

@@ -1,4 +1,5 @@
 import { createInitialInventoryState } from '../config/inventory';
+import { createInitialUpgradeState } from '../config/upgrades';
 import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 import type { PlayerClass } from '../types/player';
 import { RunEndReason, RunPhase, type RunState } from '../types/run';
@@ -17,6 +18,7 @@ export class GameSession {
       endReason: null,
       level: 1,
       experience: 0,
+      upgrades: createInitialUpgradeState(),
       kills: 0,
       gold: 0,
       inventory: createInitialInventoryState(),

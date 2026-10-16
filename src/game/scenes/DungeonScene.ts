@@ -39,12 +39,11 @@ import {
   type Damageable,
   type DamageResult,
 } from '../types/combat';
-import type { UpgradeDefinition } from '../types/upgrade';
+import type { UpgradeId } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
 import { PlayerClass } from '../types/player';
 import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
-import { LevelUpView } from '../../ui/level-up/LevelUpView';
 import { InventoryView } from '../../ui/inventory/InventoryView';
 import { PauseMenuView } from '../../ui/pause/PauseMenuView';
 
@@ -88,9 +87,6 @@ export class DungeonScene extends Phaser.Scene {
   private inventoryView: InventoryView | null = null;
   private inventoryKey: Phaser.Input.Keyboard.Key | null = null;
   private readonly upgradeSystem = new UpgradeSystem();
-  private levelUpView: LevelUpView | null = null;
-  private readonly pendingUpgradeLevels: number[] = [];
-  private isChoosingUpgrade = false;
   private isInventoryOpen = false;
   private gameOverPending = false;
 
@@ -135,7 +131,7 @@ export class DungeonScene extends Phaser.Scene {
       dungeon.height,
     );
     this.progressionSystem = new ProgressionSystem(run, (newLevel) => {
-      this.queueLevelUp(newLevel);
+      this.grantUpgradePoint(newLevel);
     });
     this.dropSystem = new DropSystem(
       this,
@@ -360,7 +356,6 @@ export class DungeonScene extends Phaser.Scene {
       if (this.inventoryKey) {
         this.input.keyboard?.removeKey(this.inventoryKey, true, true);
       }
-      this.levelUpView?.destroy();
       this.inventoryView?.destroy();
       this.interactionSystem?.destroy();
       this.visionSystem?.destroy();
@@ -386,9 +381,6 @@ export class DungeonScene extends Phaser.Scene {
       this.runAnnouncementText = null;
       this.inventoryView = null;
       this.inventoryKey = null;
-      this.levelUpView = null;
-      this.pendingUpgradeLevels.length = 0;
-      this.isChoosingUpgrade = false;
       this.isInventoryOpen = false;
       this.gameOverPending = false;
     });
@@ -400,14 +392,13 @@ export class DungeonScene extends Phaser.Scene {
     if (
       this.inventoryKey &&
       Phaser.Input.Keyboard.JustDown(this.inventoryKey) &&
-      !this.isChoosingUpgrade &&
       !this.gameOverPending
     ) {
       this.toggleInventory();
     }
 
     const actionEnabled =
-      !this.isChoosingUpgrade && !this.isInventoryOpen && !this.gameOverPending;
+      !this.isInventoryOpen && !this.gameOverPending;
     this.visionSystem?.update(delta, actionEnabled);
     this.interactionSystem?.update(actionEnabled);
 
@@ -416,22 +407,17 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
-    // Level-up choices pause the run by design. The inventory only pauses
-    // combat, so its management screen cannot be used to stop the run clock.
-    if (!this.isChoosingUpgrade) {
-      this.runTimerSystem?.update(delta);
-      this.hud?.update();
-    }
+    // Inventory management pauses combat while the run clock continues.
+    this.runTimerSystem?.update(delta);
+    this.hud?.update();
 
     if (this.gameOverPending) {
       this.scene.start(SCENE_KEYS.GAME_OVER);
       return;
     }
 
-    if (this.isChoosingUpgrade || this.isInventoryOpen) {
-      if (this.isInventoryOpen) {
-        this.playerController?.discardActionPresses();
-      }
+    if (this.isInventoryOpen) {
+      this.playerController?.discardActionPresses();
       return;
     }
 
@@ -632,63 +618,31 @@ export class DungeonScene extends Phaser.Scene {
     this.gameOverPending = true;
   }
 
-  private queueLevelUp(level: number): void {
-    this.pendingUpgradeLevels.push(level);
-
-    if (!this.levelUpView) {
-      this.showNextUpgradeSelection();
-    }
-  }
-
-  private showNextUpgradeSelection(): void {
-    const level = this.pendingUpgradeLevels.shift();
-
-    if (level === undefined) {
-      this.resumeAction();
+  private grantUpgradePoint(level: number): void {
+    const run = getGameSession(this).getRun();
+    if (!run || this.gameOverPending) {
       return;
     }
+    this.upgradeSystem.grantPoint(run.upgrades);
+    this.inventoryView?.render();
+    this.hud?.update();
+    this.showRunAnnouncement(`NÍVEL ${level}`, '+1 PONTO DE UPGRADE · ABRA O INVENTÁRIO [TAB]');
+  }
 
-    const uiRoot = document.querySelector<HTMLElement>('#ui-root');
-
-    if (!uiRoot || !this.player) {
-      throw new Error('Level up UI cannot be created without its root and player.');
+  private spendUpgradePoint(id: UpgradeId): { success: boolean; message: string } {
+    const run = getGameSession(this).getRun();
+    if (!run || run.endedAt !== null || !this.isInventoryOpen || this.gameOverPending ||
+      !this.player || !this.equipmentSystem) {
+      return { success: false, message: 'Não é possível melhorar agora.' };
     }
-
-    this.pauseAction();
-    const choices = this.upgradeSystem.getRandomChoices(
-      PROGRESSION_CONFIG.upgradeChoiceCount,
-    );
-    this.levelUpView = new LevelUpView(uiRoot, level, choices, (upgrade) => {
-      this.selectUpgrade(upgrade);
+    const success = this.upgradeSystem.spendPoint(run.upgrades, id, (upgrade) => {
+      this.equipmentSystem!.applyStatChange(() => upgrade.apply(this.player!.stats));
     });
-  }
-
-  private selectUpgrade(upgrade: UpgradeDefinition): void {
-    if (!this.player || !this.levelUpView) {
-      return;
-    }
-
-    if (this.equipmentSystem) {
-      this.equipmentSystem.applyStatChange(() => {
-        this.upgradeSystem.apply(upgrade, this.player!.stats);
-      });
-    } else {
-      this.upgradeSystem.apply(upgrade, this.player.stats);
-    }
-    this.levelUpView.destroy();
-    this.levelUpView = null;
-    this.showNextUpgradeSelection();
-  }
-
-  private pauseAction(): void {
-    if (this.isChoosingUpgrade) {
-      return;
-    }
-
-    this.isChoosingUpgrade = true;
-    this.playerController?.classAbility.suspend();
-    this.physics.world.pause();
-    this.tweens.pauseAll();
+    this.hud?.update();
+    return {
+      success,
+      message: success ? 'Upgrade aplicado!' : 'Nenhum ponto disponível para este upgrade.',
+    };
   }
 
   private toggleInventory(): void {
@@ -702,7 +656,6 @@ export class DungeonScene extends Phaser.Scene {
   private openInventory(): void {
     if (
       this.isInventoryOpen ||
-      this.isChoosingUpgrade ||
       this.gameOverPending ||
       !this.player ||
       !this.inventorySystem ||
@@ -729,6 +682,7 @@ export class DungeonScene extends Phaser.Scene {
       this.inventorySystem,
       this.equipmentSystem,
       {
+        upgrade: (id) => this.spendUpgradePoint(id),
         equip: (index) => this.equipmentSystem!.equipFromInventory(index),
         unequip: (slot) => this.equipmentSystem!.unequip(slot),
         use: (definitionId) => {
@@ -759,6 +713,7 @@ export class DungeonScene extends Phaser.Scene {
         },
         close: () => this.closeInventory(),
       },
+      getGameSession(this).getRun()!.upgrades,
     );
   }
 
@@ -773,15 +728,5 @@ export class DungeonScene extends Phaser.Scene {
     this.tweens.resumeAll();
     this.isInventoryOpen = false;
     this.hud?.update();
-  }
-
-  private resumeAction(): void {
-    if (!this.isChoosingUpgrade) {
-      return;
-    }
-
-    this.physics.world.resume();
-    this.tweens.resumeAll();
-    this.isChoosingUpgrade = false;
   }
 }

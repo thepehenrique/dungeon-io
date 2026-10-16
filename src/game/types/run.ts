@@ -1,5 +1,6 @@
 import type { InventoryState } from './inventory';
 import type { PlayerClass } from './player';
+import type { UpgradeState } from './upgrade';
 
 export enum RunEndReason {
   Defeated = 'DEFEATED',
@@ -24,6 +25,7 @@ export interface RunState {
   endReason: RunEndReason | null;
   level: number;
   experience: number;
+  upgrades: UpgradeState;
   kills: number;
   gold: number;
   inventory: InventoryState;

@@ -36,6 +36,7 @@ export class Hud {
   private lastMaxHealth = Number.NaN;
   private lastExperience = Number.NaN;
   private lastLevel = Number.NaN;
+  private lastUpgradePoints = Number.NaN;
   private lastQuickSlotSignature = '';
   private lastAbilityText = '';
   private lastTimerSignature = '';
@@ -213,9 +214,13 @@ export class Hud {
       );
     }
 
-    if (this.run.level !== this.lastLevel) {
+    if (this.run.level !== this.lastLevel || this.run.upgrades.availablePoints !== this.lastUpgradePoints) {
       this.lastLevel = this.run.level;
-      this.levelText.setText(`LV ${this.run.level}`);
+      this.lastUpgradePoints = this.run.upgrades.availablePoints;
+      const points = this.run.upgrades.availablePoints;
+      this.levelText.setText(points > 0
+        ? `LV ${this.run.level} · +${points} ${points === 1 ? 'PONTO' : 'PONTOS'} [TAB]`
+        : `LV ${this.run.level}`);
     }
 
     if (quickSlotSignature !== this.lastQuickSlotSignature) {

@@ -15,3 +15,8 @@ export interface UpgradeDefinition {
   readonly symbol: string;
   readonly apply: (stats: PlayerStats) => void;
 }
+
+export interface UpgradeState {
+  availablePoints: number;
+  levels: Record<UpgradeId, number>;
+}

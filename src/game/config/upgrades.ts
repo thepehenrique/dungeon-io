@@ -1,4 +1,17 @@
-import { UpgradeId, type UpgradeDefinition } from '../types/upgrade';
+import { UpgradeId, type UpgradeDefinition, type UpgradeState } from '../types/upgrade';
+
+export function createInitialUpgradeState(): UpgradeState {
+  return {
+    availablePoints: 0,
+    levels: {
+      [UpgradeId.Vitality]: 0,
+      [UpgradeId.Strength]: 0,
+      [UpgradeId.Agility]: 0,
+      [UpgradeId.AttackSpeed]: 0,
+      [UpgradeId.Defense]: 0,
+    },
+  };
+}
 
 const VITALITY_INCREASE = 20;
 const DAMAGE_INCREASE = 0.1;

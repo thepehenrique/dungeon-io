@@ -1,31 +1,24 @@
 import { UPGRADE_DEFINITIONS } from '../config/upgrades';
-import type { PlayerStats } from '../types/player';
-import type { UpgradeDefinition } from '../types/upgrade';
+import type { UpgradeDefinition, UpgradeId, UpgradeState } from '../types/upgrade';
 
 export class UpgradeSystem {
-  private readonly random: () => number;
-
-  constructor(random: () => number = Math.random) {
-    this.random = random;
+  grantPoint(state: UpgradeState): void {
+    state.availablePoints += 1;
   }
 
-  getRandomChoices(count: number): readonly UpgradeDefinition[] {
-    const choiceCount = Math.min(
-      Math.max(0, Math.floor(count)),
-      UPGRADE_DEFINITIONS.length,
-    );
-    const pool = [...UPGRADE_DEFINITIONS];
-
-    for (let index = 0; index < choiceCount; index += 1) {
-      const remainingChoices = pool.length - index;
-      const randomIndex = index + Math.floor(this.random() * remainingChoices);
-      [pool[index], pool[randomIndex]] = [pool[randomIndex], pool[index]];
+  spendPoint(
+    state: UpgradeState,
+    id: UpgradeId,
+    apply: (upgrade: UpgradeDefinition) => void,
+  ): boolean {
+    const upgrade = UPGRADE_DEFINITIONS.find((candidate) => candidate.id === id);
+    if (state.availablePoints < 1 || !upgrade) {
+      return false;
     }
 
-    return pool.slice(0, choiceCount);
-  }
-
-  apply(upgrade: UpgradeDefinition, stats: PlayerStats): void {
-    upgrade.apply(stats);
+    apply(upgrade);
+    state.availablePoints -= 1;
+    state.levels[id] += 1;
+    return true;
   }
 }
