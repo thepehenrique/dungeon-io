@@ -6,7 +6,7 @@ import {
   FIREBALL_CONFIG,
 } from '../config/weapons';
 
-const ARROW_ASSET_PATH = 'assets/projectiles/archer-arrow.png';
+const ARROW_ASSET_PATH = 'assets/projectiles/archer-arrow.webp';
 const ARROW_FRAME = {
   name: 'arrow-default',
   x: 250,
@@ -14,7 +14,7 @@ const ARROW_FRAME = {
   width: 1510,
   height: 260,
 } as const;
-const FIREBALL_ASSET_PATH = 'assets/projectiles/fireball-eight-frame.png';
+const FIREBALL_ASSET_PATH = 'assets/projectiles/fireball-eight-frame.webp';
 const FIREBALL_FRAME_WIDTH = 313;
 const FIREBALL_FRAME_HEIGHT = 280;
 const FIREBALL_FRAME_COLUMNS = [0, 313, 627, 941] as const;

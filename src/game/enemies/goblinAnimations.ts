@@ -51,7 +51,7 @@ export function getGoblinFacing(x: number, y: number): GoblinFacing {
 export function preloadGoblinSprites(scene: Phaser.Scene): void {
   scene.load.spritesheet(
     GOBLIN_TEXTURE_KEYS.walk,
-    'assets/characters/goblin/Goblin_Walk_with_shadow.png',
+    'assets/characters/goblin/Goblin_Walk_with_shadow.webp',
     {
       frameWidth: GOBLIN_SPRITE.frameSize,
       frameHeight: GOBLIN_SPRITE.frameSize,
@@ -59,7 +59,7 @@ export function preloadGoblinSprites(scene: Phaser.Scene): void {
   );
   scene.load.spritesheet(
     GOBLIN_TEXTURE_KEYS.attack,
-    'assets/characters/goblin/Goblin_Attack_with_shadow.png',
+    'assets/characters/goblin/Goblin_Attack_with_shadow.webp',
     {
       frameWidth: GOBLIN_SPRITE.frameSize,
       frameHeight: GOBLIN_SPRITE.frameSize,

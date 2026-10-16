@@ -73,17 +73,17 @@ export function preloadWarriorSprites(scene: Phaser.Scene): void {
 
   scene.load.spritesheet(
     WARRIOR_TEXTURE_KEYS.walk,
-    'assets/characters/warrior/Warrior_Shield_Walk.png',
+    'assets/characters/warrior/Warrior_Shield_Walk.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     WARRIOR_TEXTURE_KEYS.attack,
-    'assets/characters/warrior/Warrior_Shield_Attack.png',
+    'assets/characters/warrior/Warrior_Shield_Attack.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     WARRIOR_TEXTURE_KEYS.block,
-    'assets/characters/warrior/Warrior_Shield_Block.png',
+    'assets/characters/warrior/Warrior_Shield_Block.webp',
     frameConfig,
   );
 }

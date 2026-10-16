@@ -3,8 +3,8 @@
 Sprites direcionais do Skeleton Warrior criados para manter a linguagem visual,
 proporção e organização dos inimigos existentes.
 
-- `Skeleton_Warrior_Walk_with_shadow.png`: caminhada, 6 quadros por direção
-- `Skeleton_Warrior_Attack_with_shadow.png`: ataque, 6 quadros por direção
+- `Skeleton_Warrior_Walk_with_shadow.webp`: caminhada, 6 quadros por direção
+- `Skeleton_Warrior_Attack_with_shadow.webp`: ataque, 6 quadros por direção
 
 Cada arquivo possui grade `6 x 4`, células de `256 x 256` e linhas na ordem:
 baixo, esquerda, direita e cima.

@@ -4,11 +4,11 @@ Sprites direcionais fornecidos no pacote `warrior_spritesheets(1).zip` e
 normalizados para o contrato visual do projeto. Existe exatamente uma espada na
 mão direita e um escudo na mão esquerda em todos os estados e quadros.
 
-- `Warrior_Shield_Walk.png`: caminhada com os dois itens empunhados, 6 quadros
+- `Warrior_Shield_Walk.webp`: caminhada com os dois itens empunhados, 6 quadros
   por direção
-- `Warrior_Shield_Attack.png`: ataque somente com a espada e escudo mantido na
+- `Warrior_Shield_Attack.webp`: ataque somente com a espada e escudo mantido na
   guarda, 6 quadros por direção
-- `Warrior_Shield_Block.png`: o mesmo e único escudo avança para a guarda,
+- `Warrior_Shield_Block.webp`: o mesmo e único escudo avança para a guarda,
   recebe o impacto e retorna; a espada permanece na outra mão, 6 quadros por
   direção
 

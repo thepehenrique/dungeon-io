@@ -23,6 +23,22 @@ npm run build
 npm run preview
 ```
 
+## Compressão de imagens
+
+As texturas maiores usam WebP sem perda, preservando dimensões, transparência
+e pixels dos sprites. Os tilesets usados no Tiled continuam em PNG.
+
+Para converter novas texturas PNG maiores que 100 KiB (requer Python e Pillow
+10.2+):
+
+```bash
+python3 scripts/compress_images.py
+```
+
+O script verifica os pixels após a conversão, atualiza as referências do jogo
+e substitui somente arquivos que ficam menores. A pasta `assets/dungeon` é
+preservada para edição no Tiled.
+
 ## Controles
 
 - `W`, `A`, `S`, `D`: movimentar o personagem.

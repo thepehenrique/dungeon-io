@@ -52,12 +52,12 @@ export function preloadMageSprites(scene: Phaser.Scene): void {
 
   scene.load.spritesheet(
     MAGE_TEXTURE_KEYS.walk,
-    'assets/characters/mage/Mage_Novice_Walk_with_shadow.png',
+    'assets/characters/mage/Mage_Novice_Walk_with_shadow.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     MAGE_TEXTURE_KEYS.cast,
-    'assets/characters/mage/Mage_Novice_Cast_with_shadow.png',
+    'assets/characters/mage/Mage_Novice_Cast_with_shadow.webp',
     frameConfig,
   );
 }

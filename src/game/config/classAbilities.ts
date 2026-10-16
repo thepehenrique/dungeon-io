@@ -14,7 +14,7 @@ export const ARCHER_DASH_CONFIG = {
 
 export const ARCHER_DASH_VISUAL_CONFIG = {
   textureKey: 'archer-dash-trail',
-  assetPath: 'assets/abilities/archer-dash-trail.png',
+  assetPath: 'assets/abilities/archer-dash-trail.webp',
   displayWidth: 120,
   displayHeight: 60,
   originX: 0.88,
@@ -30,7 +30,7 @@ export const MAGE_PROTECTION_CONFIG = {
 
 export const MAGE_PROTECTION_VISUAL_CONFIG = {
   textureKey: 'mage-arcane-shield',
-  assetPath: 'assets/abilities/mage-arcane-shield.png',
+  assetPath: 'assets/abilities/mage-arcane-shield.webp',
   displaySize: 112,
   alpha: 0.82,
   depth: 11,

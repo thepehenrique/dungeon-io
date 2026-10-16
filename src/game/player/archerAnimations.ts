@@ -52,12 +52,12 @@ export function preloadArcherSprites(scene: Phaser.Scene): void {
 
   scene.load.spritesheet(
     ARCHER_TEXTURE_KEYS.walk,
-    'assets/characters/archer/Archer_novice_Walk_with_shadow.png',
+    'assets/characters/archer/Archer_novice_Walk_with_shadow.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     ARCHER_TEXTURE_KEYS.attack,
-    'assets/characters/archer/Archer_novice_attack_with_shadow.png',
+    'assets/characters/archer/Archer_novice_attack_with_shadow.webp',
     frameConfig,
   );
 }

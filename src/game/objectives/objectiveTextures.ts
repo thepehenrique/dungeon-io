@@ -5,7 +5,7 @@ export const OBJECTIVE_TEXTURE_KEYS = {
   exitDoor: 'objective-exit-door',
 } as const;
 
-const EXIT_DOOR_ASSET_PATH = 'assets/objectives/turquoise-rune-exit-door.png';
+const EXIT_DOOR_ASSET_PATH = 'assets/objectives/turquoise-rune-exit-door.webp';
 
 export function preloadObjectiveTextures(scene: Phaser.Scene): void {
   scene.load.image(OBJECTIVE_TEXTURE_KEYS.exitDoor, EXIT_DOOR_ASSET_PATH);

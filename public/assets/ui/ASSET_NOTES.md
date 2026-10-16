@@ -21,7 +21,7 @@ icons, HP, XP and cooldown values are intentionally absent.
 | `xp_bar_frame.png` | 384×40 | Thin XP border with transparent fill channel |
 | `timer_frame.png` | 160×48 | Dynamic dungeon timer frame |
 | `objective_frame.png` | 448×72 | Short objective-message ribbon |
-| `inventory_panel.png` | 960×600 | Paused inventory layout with equipment, backpack, details and quick-slot regions |
+| `inventory_panel.webp` | 960×600 | Paused inventory layout with equipment, backpack, details and quick-slot regions |
 | `ui_decorations_sheet.png` | 256×192 | 4×3 sheet of separators, corners and small accents |
 
 `slot_states.json` records the spritesheet frame coordinates. Every slot frame is

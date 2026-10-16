@@ -54,12 +54,12 @@ export function preloadZombieSprites(scene: Phaser.Scene): void {
 
   scene.load.spritesheet(
     ZOMBIE_TEXTURE_KEYS.walk,
-    'assets/characters/zombie/Zombie_Walk_with_shadow.png',
+    'assets/characters/zombie/Zombie_Walk_with_shadow.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     ZOMBIE_TEXTURE_KEYS.attack,
-    'assets/characters/zombie/Zombie_Attack_with_shadow.png',
+    'assets/characters/zombie/Zombie_Attack_with_shadow.webp',
     frameConfig,
   );
 }

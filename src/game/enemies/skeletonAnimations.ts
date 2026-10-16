@@ -54,12 +54,12 @@ export function preloadSkeletonSprites(scene: Phaser.Scene): void {
 
   scene.load.spritesheet(
     SKELETON_TEXTURE_KEYS.walk,
-    'assets/characters/skeleton/Skeleton_Warrior_Walk_with_shadow.png',
+    'assets/characters/skeleton/Skeleton_Warrior_Walk_with_shadow.webp',
     frameConfig,
   );
   scene.load.spritesheet(
     SKELETON_TEXTURE_KEYS.attack,
-    'assets/characters/skeleton/Skeleton_Warrior_Attack_with_shadow.png',
+    'assets/characters/skeleton/Skeleton_Warrior_Attack_with_shadow.webp',
     frameConfig,
   );
 }
