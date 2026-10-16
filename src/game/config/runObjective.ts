@@ -5,6 +5,7 @@ export const RUN_OBJECTIVE_CONFIG = {
   urgentTimeThresholdMs: 60_000,
   interactionRange: 92,
   exitDoorDisplaySize: 144,
+  exitDoorSpawnClearance: 48,
   exitDoorPromptOffsetY: 150,
   exitDoorFeedbackOffsetY: 78,
 } as const;

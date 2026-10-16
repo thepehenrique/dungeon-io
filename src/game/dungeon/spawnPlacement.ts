@@ -1,4 +1,5 @@
 import { PLAYER_SPAWN_SAFETY } from '../config/dungeonAssets';
+import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 import type { EnemySpawnDefinition } from '../types/enemy';
 import type { MapPoint } from './TilemapDungeon';
 
@@ -50,6 +51,28 @@ export function findPlayerSpawnPoints(grid: SpawnGrid, start: MapPoint): MapPoin
     }
   }
   return candidates;
+}
+
+export function findExitSpawnPoints(grid: SpawnGrid, candidates: readonly MapPoint[]): MapPoint[] {
+  const size = RUN_OBJECTIVE_CONFIG.exitDoorDisplaySize;
+  const halfWidth = Math.ceil((size - grid.tileWidth) / (2 * grid.tileWidth));
+  const height = Math.ceil(size / grid.tileHeight);
+  return candidates.filter((point) => {
+    const x = Math.floor(point.x / grid.tileWidth);
+    const y = Math.floor(point.y / grid.tileHeight);
+    // The portal is anchored at its bottom; leave an approach below it.
+    for (let dy = -height; dy <= 1; dy += 1) {
+      for (let dx = -halfWidth; dx <= halfWidth; dx += 1) {
+        const tx = x + dx;
+        const ty = y + dy;
+        if (tx < 0 || ty < 0 || tx >= grid.width || ty >= grid.height ||
+          !grid.hasFloor(tx, ty) || grid.isBlocked(tx, ty) || grid.isReserved(tx, ty)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }).map(({ id, x, y }) => ({ id: `Exit_${id}`, x, y }));
 }
 
 export function selectRunSpawns(

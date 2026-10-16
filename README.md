@@ -59,6 +59,8 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
   528 pixels de distância inicial, preservando a quantidade de mobs.
 - Ao começar a fase de fuga, a chave aparece em um ponto livre e alcançável
   sorteado por todo o mapa, diferente do spawn inicial do jogador e da saída.
+- O portal é sorteado por todo o mapa a cada run, com espaço livre para sua
+  arte e aproximação, sem sobrepor o spawn inicial do jogador ou a chave.
 - A dungeon exibe o nome e a classe selecionada.
 - O jogador pode se mover com WASD e acompanha a posição do mouse.
 - Guerreiro, Arqueiro e Mago possuem vida, dano, defesa, velocidade, velocidade de ataque e alcance próprios.

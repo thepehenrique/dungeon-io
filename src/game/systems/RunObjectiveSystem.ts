@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { RUN_OBJECTIVE_CONFIG } from '../config/runObjective';
 
 import { RunPhase, type RunState } from '../types/run';
 import { DungeonKey } from '../objectives/DungeonKey';
@@ -39,8 +40,11 @@ export class RunObjectiveSystem {
       throw new Error('The dungeon requires at least one ExitGates spawn.');
     }
 
-    const candidates = exitSpawns.filter((spawn) => !samePoint(spawn, playerSpawn));
-    const selectedExit = randomItem(candidates.length > 0 ? candidates : exitSpawns);
+    const candidates = exitSpawns.filter((spawn) => !isInsideExitArea(playerSpawn, spawn));
+    if (candidates.length === 0) {
+      throw new Error('The dungeon requires a portal spawn clear of the player.');
+    }
+    const selectedExit = randomItem(candidates);
     this.exitDoor = new ExitDoor(scene, selectedExit.x, selectedExit.y);
   }
 
@@ -60,7 +64,7 @@ export class RunObjectiveSystem {
     const candidates = this.keySpawns.filter(
       (spawn) =>
         !samePoint(spawn, this.playerSpawn) &&
-        !sameCoordinates(spawn.x, spawn.y, this.exitDoor.x, this.exitDoor.y),
+        !isInsideExitArea(spawn, this.exitDoor),
     );
 
     if (candidates.length === 0) {
@@ -117,6 +121,15 @@ function randomItem<T>(items: readonly T[]): T {
 
 function samePoint(first: ObjectiveSpawnPoint, second: ObjectiveSpawnPoint): boolean {
   return sameCoordinates(first.x, first.y, second.x, second.y);
+}
+
+function isInsideExitArea(
+  point: { readonly x: number; readonly y: number },
+  exit: { readonly x: number; readonly y: number },
+): boolean {
+  const { exitDoorDisplaySize: size, exitDoorSpawnClearance: margin } = RUN_OBJECTIVE_CONFIG;
+  return Math.abs(point.x - exit.x) <= size / 2 + margin &&
+    point.y >= exit.y - size - margin && point.y <= exit.y + margin;
 }
 
 function sameCoordinates(x1: number, y1: number, x2: number, y2: number): boolean {
