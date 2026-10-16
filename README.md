@@ -28,6 +28,8 @@ npm run preview
 - `W`, `A`, `S`, `D`: movimentar o personagem.
 - Mouse: definir a direção para a qual o personagem olha.
 - Clique esquerdo: executar o ataque principal.
+- `ESC`: pausar ou continuar o jogo. O menu de pausa permite ajustar o volume
+  da música de fundo e voltar à seleção de personagem.
 
 O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo.
 

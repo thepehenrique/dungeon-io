@@ -45,8 +45,28 @@ import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 import { LevelUpView } from '../../ui/level-up/LevelUpView';
 import { InventoryView } from '../../ui/inventory/InventoryView';
+import { PauseMenuView } from '../../ui/pause/PauseMenuView';
 
 export class DungeonScene extends Phaser.Scene {
+  private pauseMenu: PauseMenuView | null = null;
+  private pauseCaptures: number[] = [];
+  private readonly handlePauseKey = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.repeat || this.gameOverPending) {
+      return;
+    }
+    if (this.pauseMenu) {
+      this.closePauseMenu();
+    } else if (this.isInventoryOpen) {
+      this.closeInventory();
+    } else {
+      this.openPauseMenu();
+    }
+  };
   private playerController: PlayerController | null = null;
   private projectileManager: ProjectileManager | null = null;
   private dropSystem: DropSystem | null = null;
@@ -328,7 +348,12 @@ export class DungeonScene extends Phaser.Scene {
       this.playerController.classAbility,
     );
     this.showRunAnnouncement('SOBREVIVA E FIQUE MAIS FORTE', '');
+    window.addEventListener('keydown', this.handlePauseKey, true);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('keydown', this.handlePauseKey, true);
+      this.pauseMenu?.destroy();
+      this.pauseMenu = null;
+      this.restorePauseCaptures();
       this.dungeonMusic?.stop();
       this.dungeonMusic = null;
       if (this.inventoryKey) {
@@ -416,6 +441,44 @@ export class DungeonScene extends Phaser.Scene {
 
     if (this.gameOverPending) {
       this.scene.start(SCENE_KEYS.GAME_OVER);
+    }
+  }
+
+  private openPauseMenu(): void {
+    const root = document.querySelector<HTMLElement>('#ui-root');
+    if (!root || this.pauseMenu) {
+      return;
+    }
+    this.pauseCaptures = [...(this.input.keyboard?.getCaptures() ?? [])];
+    this.input.keyboard?.clearCaptures();
+    this.scene.pause();
+    this.pauseMenu = new PauseMenuView(root, this.dungeonMusic?.volume ?? DUNGEON_MUSIC.volume, {
+      resume: () => this.closePauseMenu(),
+      setMusicVolume: (volume) => this.dungeonMusic?.setVolume(volume),
+      returnToMenu: () => {
+        this.closePauseMenu();
+        this.scene.start(SCENE_KEYS.MENU);
+      },
+    });
+  }
+
+  private closePauseMenu(): void {
+    if (!this.pauseMenu) {
+      return;
+    }
+    this.pauseMenu.destroy();
+    this.pauseMenu = null;
+    this.restorePauseCaptures();
+    this.input.keyboard?.resetKeys();
+    this.input.activePointer.reset();
+    this.playerController?.discardActionPresses();
+    this.scene.resume();
+  }
+
+  private restorePauseCaptures(): void {
+    if (this.pauseCaptures.length > 0) {
+      this.input.keyboard?.addCapture(this.pauseCaptures);
+      this.pauseCaptures = [];
     }
   }
 

@@ -899,3 +899,75 @@ legend {
     grid-template-columns: 1fr;
   }
 }
+
+.pause-dialog {
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid #806d3d;
+  color: #f4f5f7;
+  background: #0c1118;
+  box-shadow: 0 28px 90px #0009;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.pause-dialog::backdrop {
+  background: #030508c9;
+  backdrop-filter: blur(4px);
+}
+
+.pause-dialog h2 {
+  margin: 8px 0 28px;
+  color: #f0e7cd;
+  font-family: Georgia, serif;
+  font-size: 28px;
+  letter-spacing: 0.05em;
+}
+
+.pause-actions:not([hidden]),
+.pause-audio:not([hidden]) {
+  display: grid;
+  gap: 14px;
+}
+
+.pause-dialog button {
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid #536075;
+  background: #202b38;
+  color: #e8d28e;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pause-dialog button:hover {
+  background: #2d3b4c;
+}
+
+.pause-dialog :focus-visible {
+  outline: 2px solid #f4d17a;
+  outline-offset: 4px;
+}
+
+.pause-volume {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 0 20px;
+}
+
+.pause-volume input {
+  min-width: 0;
+  flex: 1;
+  accent-color: #e8d28e;
+  cursor: pointer;
+}
+
+.pause-volume output {
+  min-width: 4ch;
+  color: #e8d28e;
+  font-variant-numeric: tabular-nums;
+}

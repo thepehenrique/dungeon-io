@@ -135,7 +135,7 @@ export class InventoryView {
         <header class="inventory-header">
           <h2 id="inventory-title">INVENTÁRIO</h2>
           <div class="inventory-capacity">${this.inventory.usedSlots} / ${this.inventory.capacity}</div>
-          <button class="inventory-close" type="button" data-close-inventory>Fechar [TAB]</button>
+          <button class="inventory-close" type="button" data-close-inventory>Fechar [TAB | ESC]</button>
         </header>
 
         <div class="inventory-layout">

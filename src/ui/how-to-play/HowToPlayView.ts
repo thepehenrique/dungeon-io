@@ -89,6 +89,10 @@ export class HowToPlayView {
               <span class="key-combo"><kbd>TAB</kbd></span>
               <span>Inventário</span>
             </div>
+            <div class="control-row">
+              <span class="key-combo"><kbd>ESC</kbd></span>
+              <span>Pausar / continuar</span>
+            </div>
           </div>
         </div>
 
