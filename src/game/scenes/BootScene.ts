@@ -5,9 +5,14 @@ import {
   ARROW_SHOT_SOUND,
   DUNGEON_MUSIC,
   FIREBALL_CAST_SOUND,
+  GOBLIN_ATTACK_SOUND,
+  GOBLIN_ALERT_SOUNDS,
+  GOBLIN_LAUGH_SOUND,
   MENU_MUSIC,
+  SKELETON_MOVEMENT_SOUND,
   SWORD_ATTACK_SOUND,
   WARRIOR_BLOCK_SOUND,
+  ZOMBIE_MOVEMENT_SOUNDS,
 } from '../config/audio';
 import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
 import { PHASER_UI_ASSETS } from '../config/uiAssets';
@@ -70,6 +75,15 @@ export class BootScene extends Phaser.Scene {
     this.load.audio(FIREBALL_CAST_SOUND.key, FIREBALL_CAST_SOUND.path);
     this.load.audio(WARRIOR_BLOCK_SOUND.key, WARRIOR_BLOCK_SOUND.path);
     this.load.audio(SWORD_ATTACK_SOUND.key, SWORD_ATTACK_SOUND.path);
+    this.load.audio(SKELETON_MOVEMENT_SOUND.key, SKELETON_MOVEMENT_SOUND.path);
+    for (const sound of GOBLIN_ALERT_SOUNDS) {
+      this.load.audio(sound.key, sound.path);
+    }
+    this.load.audio(GOBLIN_ATTACK_SOUND.key, GOBLIN_ATTACK_SOUND.path);
+    this.load.audio(GOBLIN_LAUGH_SOUND.key, GOBLIN_LAUGH_SOUND.path);
+    for (const sound of ZOMBIE_MOVEMENT_SOUNDS) {
+      this.load.audio(sound.key, sound.path);
+    }
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
     preloadMageSprites(this);

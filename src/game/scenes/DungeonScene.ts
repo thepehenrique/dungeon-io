@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { SceneMusic } from '../audio/SceneMusic';
-import { DUNGEON_MUSIC, WARRIOR_BLOCK_SOUND } from '../config/audio';
+import { DUNGEON_MUSIC, GOBLIN_LAUGH_SOUND, WARRIOR_BLOCK_SOUND } from '../config/audio';
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
 import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
@@ -42,6 +42,7 @@ import {
 import type { UpgradeId } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
 import { PlayerClass } from '../types/player';
+import { EnemyType } from '../types/enemy';
 import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 import { InventoryView } from '../../ui/inventory/InventoryView';
@@ -261,12 +262,15 @@ export class DungeonScene extends Phaser.Scene {
       dungeon.walls,
       dungeon.getVisionBlockers(),
       (attacker, target) => {
-        combatSystem.applyDamage(target, {
+        const result = combatSystem.applyDamage(target, {
           sourceId: attacker.enemyId,
           amount: attacker.stats.damage,
           attackKind: AttackKind.Melee,
           sourcePosition: new Phaser.Math.Vector2(attacker.x, attacker.y),
         });
+        if (attacker.enemyType === EnemyType.Goblin && result.appliedDamage > 0) {
+          this.sound.play(GOBLIN_LAUGH_SOUND.key, { volume: GOBLIN_LAUGH_SOUND.volume });
+        }
       },
       enemySpawns,
     );

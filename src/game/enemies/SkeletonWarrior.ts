@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { EnemySound } from '../audio/EnemySound';
+import { SKELETON_MOVEMENT_SOUND, SWORD_ATTACK_SOUND } from '../config/audio';
 import type { Player } from '../player/Player';
 import { EnemyState, EnemyType } from '../types/enemy';
 import { Enemy, type EnemyLineOfSightTest } from './Enemy';
@@ -16,6 +18,7 @@ import {
 export class SkeletonWarrior extends Enemy {
   private facing: SkeletonFacing = 'down';
   private attacking = false;
+  private readonly movementSound: EnemySound;
 
   constructor(scene: Phaser.Scene, x: number, y: number, level: number) {
     super(scene, x, y, EnemyType.SkeletonWarrior, level);
@@ -27,6 +30,7 @@ export class SkeletonWarrior extends Enemy {
     );
     this.setRotation(0);
     this.showIdleFrame();
+    this.movementSound = new EnemySound(this, SKELETON_MOVEMENT_SOUND);
   }
 
   override updateAI(
@@ -37,12 +41,14 @@ export class SkeletonWarrior extends Enemy {
     super.updateAI(player, onAttack, hasLineOfSight);
 
     if (this.isDead || !this.active) {
+      this.movementSound.stop();
       return;
     }
 
     this.setRotation(0);
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMoving = body.velocity.lengthSq() > 0;
+    this.movementSound.update(player, isMoving && !this.attacking);
 
     if (this.attacking) {
       return;
@@ -67,6 +73,8 @@ export class SkeletonWarrior extends Enemy {
   }
 
   protected override onAttackStarted(player: Player): void {
+    this.movementSound.stop();
+    this.scene.sound.play(SWORD_ATTACK_SOUND.key, { volume: SWORD_ATTACK_SOUND.volume });
     this.facing = getSkeletonFacing(player.x - this.x, player.y - this.y);
     this.attacking = true;
     this.setRotation(0);
@@ -76,6 +84,11 @@ export class SkeletonWarrior extends Enemy {
       this,
     );
     this.play(getSkeletonAttackAnimationKey(this.facing));
+  }
+
+  override die(): void {
+    this.movementSound.stop();
+    super.die();
   }
 
   private showIdleFrame(): void {

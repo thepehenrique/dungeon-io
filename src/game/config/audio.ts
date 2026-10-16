@@ -46,3 +46,52 @@ export const SWORD_ATTACK_SOUND = {
   path: 'assets/audio/sword-attack.mp3',
   volume: 0.1,
 } as const;
+
+export const SKELETON_MOVEMENT_SOUND = {
+  key: 'skeleton-movement',
+  path: 'assets/audio/skeleton-movement.mp3',
+  volume: 0.1,
+  audibleRange: 480,
+} as const;
+
+export const GOBLIN_ALERT_SOUNDS = [
+  {
+    key: 'goblin-alert-1',
+    path: 'assets/audio/goblin-alert-1.mp3',
+    volume: 0.1,
+    audibleRange: 480,
+    loop: false,
+  },
+  {
+    key: 'goblin-alert-2',
+    path: 'assets/audio/goblin-alert-2.mp3',
+    volume: 0.1,
+    audibleRange: 480,
+    loop: false,
+  },
+] as const;
+
+export const GOBLIN_ATTACK_SOUND = {
+  key: 'goblin-attack',
+  path: 'assets/audio/goblin-attack.mp3',
+  volume: 0.1,
+} as const;
+
+export const GOBLIN_LAUGH_SOUND = {
+  key: 'goblin-laugh',
+  path: 'assets/audio/goblin-laugh.mp3',
+  volume: 0.1,
+} as const;
+
+export const ZOMBIE_MOVEMENT_SOUNDS = [
+  { key: 'zombie-movement-1', path: 'assets/audio/zombie-movement-1.mp3' },
+  { key: 'zombie-movement-2', path: 'assets/audio/zombie-movement-2.mp3' },
+  { key: 'zombie-movement-3', path: 'assets/audio/zombie-movement-3.mp3' },
+] as const;
+
+export const ZOMBIE_MOVEMENT_SOUND_CONFIG = {
+  key: ZOMBIE_MOVEMENT_SOUNDS[0].key,
+  variants: ZOMBIE_MOVEMENT_SOUNDS.map((sound) => sound.key),
+  volume: 0.1,
+  audibleRange: 480,
+} as const;

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { EnemySound } from '../audio/EnemySound';
+import { ZOMBIE_MOVEMENT_SOUND_CONFIG } from '../config/audio';
 import type { Player } from '../player/Player';
 import { EnemyState, EnemyType } from '../types/enemy';
 import { Enemy, type EnemyLineOfSightTest } from './Enemy';
@@ -16,6 +18,7 @@ import {
 export class Zombie extends Enemy {
   private facing: ZombieFacing = 'down';
   private attacking = false;
+  private readonly movementSound: EnemySound;
 
   constructor(scene: Phaser.Scene, x: number, y: number, level: number) {
     super(scene, x, y, EnemyType.Zombie, level);
@@ -27,6 +30,7 @@ export class Zombie extends Enemy {
     );
     this.setRotation(0);
     this.showIdleFrame();
+    this.movementSound = new EnemySound(this, ZOMBIE_MOVEMENT_SOUND_CONFIG);
   }
 
   override updateAI(
@@ -37,12 +41,14 @@ export class Zombie extends Enemy {
     super.updateAI(player, onAttack, hasLineOfSight);
 
     if (this.isDead || !this.active) {
+      this.movementSound.stop();
       return;
     }
 
     this.setRotation(0);
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMoving = body.velocity.lengthSq() > 0;
+    this.movementSound.update(player, isMoving && !this.attacking);
 
     if (this.attacking) {
       return;
@@ -67,6 +73,7 @@ export class Zombie extends Enemy {
   }
 
   protected override onAttackStarted(player: Player): void {
+    this.movementSound.stop();
     this.facing = getZombieFacing(player.x - this.x, player.y - this.y);
     this.attacking = true;
     this.setRotation(0);
@@ -76,6 +83,11 @@ export class Zombie extends Enemy {
       this,
     );
     this.play(getZombieAttackAnimationKey(this.facing));
+  }
+
+  override die(): void {
+    this.movementSound.stop();
+    super.die();
   }
 
   private showIdleFrame(): void {

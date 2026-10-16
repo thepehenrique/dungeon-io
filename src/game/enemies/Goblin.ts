@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import { EnemySound } from '../audio/EnemySound';
+import { GOBLIN_ATTACK_SOUND, GOBLIN_ALERT_SOUNDS } from '../config/audio';
 import type { Player } from '../player/Player';
 import { EnemyState, EnemyType } from '../types/enemy';
 import { Enemy, type EnemyLineOfSightTest } from './Enemy';
@@ -16,6 +18,8 @@ import {
 export class Goblin extends Enemy {
   private facing: GoblinFacing = 'down';
   private attacking = false;
+  private hasSpottedPlayer = false;
+  private readonly alertSound: EnemySound;
 
   constructor(scene: Phaser.Scene, x: number, y: number, level: number) {
     super(scene, x, y, EnemyType.Goblin, level);
@@ -27,6 +31,8 @@ export class Goblin extends Enemy {
     );
     this.setRotation(0);
     this.showIdleFrame();
+    const voice = GOBLIN_ALERT_SOUNDS[Math.floor(Math.random() * GOBLIN_ALERT_SOUNDS.length)];
+    this.alertSound = new EnemySound(this, voice);
   }
 
   override updateAI(
@@ -37,12 +43,15 @@ export class Goblin extends Enemy {
     super.updateAI(player, onAttack, hasLineOfSight);
 
     if (this.isDead || !this.active) {
+      this.alertSound.stop();
       return;
     }
 
     this.setRotation(0);
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMoving = body.velocity.lengthSq() > 0;
+    this.hasSpottedPlayer ||= this.aiState === EnemyState.Chase || this.aiState === EnemyState.Attack;
+    this.alertSound.update(player, this.hasSpottedPlayer);
 
     if (this.attacking) {
       return;
@@ -70,6 +79,7 @@ export class Goblin extends Enemy {
   }
 
   protected override onAttackStarted(player: Player): void {
+    this.scene.sound.play(GOBLIN_ATTACK_SOUND.key, { volume: GOBLIN_ATTACK_SOUND.volume });
     this.facing = getGoblinFacing(player.x - this.x, player.y - this.y);
     this.attacking = true;
     this.setRotation(0);
@@ -79,6 +89,11 @@ export class Goblin extends Enemy {
       this,
     );
     this.play(getGoblinAttackAnimationKey(this.facing));
+  }
+
+  override die(): void {
+    this.alertSound.stop();
+    super.die();
   }
 
   private showIdleFrame(): void {
