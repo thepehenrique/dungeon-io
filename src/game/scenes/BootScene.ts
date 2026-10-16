@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 
-import { DUNGEON_MUSIC, MENU_MUSIC } from '../config/audio';
+import {
+  ARCHER_DASH_SOUND,
+  ARROW_SHOT_SOUND,
+  DUNGEON_MUSIC,
+  FIREBALL_CAST_SOUND,
+  MENU_MUSIC,
+  SWORD_ATTACK_SOUND,
+  WARRIOR_BLOCK_SOUND,
+} from '../config/audio';
 import { DUNGEON_MAP, DUNGEON_TILESETS } from '../config/dungeonAssets';
 import { PHASER_UI_ASSETS } from '../config/uiAssets';
 import { REGISTRY_KEYS, SCENE_KEYS } from '../constants/game';
@@ -57,6 +65,11 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON(DUNGEON_MAP.key, DUNGEON_MAP.path);
     this.load.audio(MENU_MUSIC.key, MENU_MUSIC.path);
     this.load.audio(DUNGEON_MUSIC.key, DUNGEON_MUSIC.path);
+    this.load.audio(ARROW_SHOT_SOUND.key, ARROW_SHOT_SOUND.path);
+    this.load.audio(ARCHER_DASH_SOUND.key, ARCHER_DASH_SOUND.path);
+    this.load.audio(FIREBALL_CAST_SOUND.key, FIREBALL_CAST_SOUND.path);
+    this.load.audio(WARRIOR_BLOCK_SOUND.key, WARRIOR_BLOCK_SOUND.path);
+    this.load.audio(SWORD_ATTACK_SOUND.key, SWORD_ATTACK_SOUND.path);
     preloadArcherSprites(this);
     preloadWarriorSprites(this);
     preloadMageSprites(this);

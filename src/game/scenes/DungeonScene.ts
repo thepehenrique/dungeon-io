@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { SceneMusic } from '../audio/SceneMusic';
-import { DUNGEON_MUSIC } from '../config/audio';
+import { DUNGEON_MUSIC, WARRIOR_BLOCK_SOUND } from '../config/audio';
 import { COMBAT_BALANCE } from '../config/combat';
 import { DUNGEON_STYLE } from '../config/dungeon';
 import { CHEST_DROP_TABLES, DROP_CONFIG } from '../config/drops';
@@ -41,6 +41,7 @@ import {
 } from '../types/combat';
 import type { UpgradeDefinition } from '../types/upgrade';
 import { RunEndReason } from '../types/run';
+import { PlayerClass } from '../types/player';
 import { Hud } from '../ui/hud/Hud';
 import { createPrimaryWeapon } from '../weapons/createPrimaryWeapon';
 import { LevelUpView } from '../../ui/level-up/LevelUpView';
@@ -527,6 +528,9 @@ export class DungeonScene extends Phaser.Scene {
     result: DamageResult,
   ): void {
     const blocked = result.appliedDamage === 0 && result.damageReductionApplied;
+    if (blocked && target instanceof Player && target.playerClass === PlayerClass.Warrior) {
+      this.sound.play(WARRIOR_BLOCK_SOUND.key, { volume: WARRIOR_BLOCK_SOUND.volume });
+    }
     const prefix = result.critical ? 'CRIT ' : '';
     const color = result.critical
       ? '#ffd36a'

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { SWORD_ATTACK_SOUND } from '../config/audio';
 import { SWORD_CONFIG } from '../config/weapons';
 import type { Player } from '../player/Player';
 import { AttackKind, type MeleeAttackHandler } from '../types/combat';
@@ -20,6 +21,7 @@ export class SwordWeapon extends PrimaryWeapon {
 
   protected performAttack(direction: Phaser.Math.Vector2): void {
     this.owner.playSwordAttack(direction);
+    this.scene.sound.play(SWORD_ATTACK_SOUND.key, { volume: SWORD_ATTACK_SOUND.volume });
 
     this.onMeleeAttack({
       sourceId: this.owner.playerId,

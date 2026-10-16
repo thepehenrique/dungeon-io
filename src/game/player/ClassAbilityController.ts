@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { ARCHER_DASH_SOUND } from '../config/audio';
 import {
   ARCHER_DASH_CONFIG,
   CLASS_ABILITY_PRESENTATION,
@@ -148,6 +149,7 @@ export class ClassAbilityController {
     this.activeRemainingMs = ARCHER_DASH_CONFIG.durationMs;
     this.cooldownRemainingMs = ARCHER_DASH_CONFIG.cooldownMs;
     this.player.setDashing(true, this.dashDirection);
+    this.player.scene.sound.play(ARCHER_DASH_SOUND.key, { volume: ARCHER_DASH_SOUND.volume });
   }
 
   private updateMage(deltaMs: number, spacePressed: boolean): void {

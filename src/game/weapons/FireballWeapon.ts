@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { FIREBALL_CAST_SOUND } from '../config/audio';
 import type { Player } from '../player/Player';
 import { FireballProjectile } from '../projectiles/FireballProjectile';
 import type { ProjectileManager } from '../projectiles/ProjectileManager';
@@ -28,5 +29,6 @@ export class FireballWeapon extends PrimaryWeapon {
         },
       }),
     );
+    this.scene.sound.play(FIREBALL_CAST_SOUND.key, { volume: FIREBALL_CAST_SOUND.volume });
   }
 }

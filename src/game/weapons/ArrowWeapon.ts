@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { ARROW_SHOT_SOUND } from '../config/audio';
 import type { Player } from '../player/Player';
 import { ArrowProjectile } from '../projectiles/ArrowProjectile';
 import type { ProjectileManager } from '../projectiles/ProjectileManager';
@@ -29,5 +30,9 @@ export class ArrowWeapon extends PrimaryWeapon {
         },
       }),
     );
+    this.scene.sound.play(ARROW_SHOT_SOUND.key, {
+      volume: ARROW_SHOT_SOUND.volume,
+      rate: ARROW_SHOT_SOUND.rate,
+    });
   }
 }
