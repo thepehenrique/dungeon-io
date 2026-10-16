@@ -128,6 +128,10 @@ export class CombatSystem {
     defense: number,
     incomingMultiplier: number,
   ): number {
+    if (incomingMultiplier === 0) {
+      return 0;
+    }
+
     const mitigatedDamage =
       rawDamage *
       (COMBAT_BALANCE.defenseScale /

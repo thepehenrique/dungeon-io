@@ -526,6 +526,7 @@ export class DungeonScene extends Phaser.Scene {
     target: Damageable,
     result: DamageResult,
   ): void {
+    const blocked = result.appliedDamage === 0 && result.damageReductionApplied;
     const prefix = result.critical ? 'CRIT ' : '';
     const color = result.critical
       ? '#ffd36a'
@@ -533,7 +534,7 @@ export class DungeonScene extends Phaser.Scene {
         ? '#80c9ff'
         : '#f4f5f7';
     const text = this.add
-      .text(target.x, target.y - 30, `${prefix}${result.appliedDamage}`, {
+      .text(target.x, target.y - 30, blocked ? 'BLOQUEADO' : `${prefix}${result.appliedDamage}`, {
         fontFamily: 'Arial, sans-serif',
         fontSize: result.critical ? '20px' : '17px',
         fontStyle: 'bold',

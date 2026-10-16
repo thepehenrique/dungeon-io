@@ -92,6 +92,8 @@ O Guerreiro usa espada, o Arqueiro dispara flechas e o Mago lança bolas de fogo
 - Ataques do jogador causam dano e podem derrotar inimigos.
 - Inimigos atacam com cooldown próprio e reduzem a vida do jogador.
 - Defesa mitiga dano, mortes são processadas e kills são contabilizadas.
+- O escudo do Guerreiro bloqueia totalmente o dano frontal ao segurar Espaço,
+  respeitando o arco de bloqueio de 120°.
 - Inimigos derrotados concedem XP de acordo com seu tipo.
 - XP excedente é preservado ao subir de nível.
 - A quantidade necessária cresce conforme o nível da run.

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 export const WARRIOR_BLOCK_CONFIG = {
-  damageReduction: 0.7,
+  damageReduction: 1,
   movementMultiplier: 0.5,
   frontalArc: Phaser.Math.DegToRad(120),
 } as const;
